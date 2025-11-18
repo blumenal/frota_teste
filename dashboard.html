@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistema de Frota</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="assets/logo-pm.png" alt="PM" style="width: 25%; height: 25%; object-fit: contain;">
+                <h1>Sistema de Frota - PM</h1>
+            </div>
+            <div class="user-info">
+                <button id="homeBtn" class="btn-secondary">🏠 Home</button>
+                <span id="userName">Usuário</span>
+                <button id="logoutBtn" class="btn-secondary">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="main-nav">
+        <div class="nav-container">
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            <div class="nav-menu-wrapper">
+                <ul class="nav-menu" id="navMenu">
+                    <li><a href="#" data-page="uso_viatura" class="nav-link active">🚗 Uso de Viatura</a></li>
+                    <li><a href="#" data-page="abastecimento" class="nav-link">⛽ Abastecimento</a></li>
+                    <li><a href="#" data-page="avaria" class="nav-link">🔧 Comunicação de Avaria</a></li>
+                    <li><a href="#" data-page="cadastro_motorista" class="nav-link admin-link" style="display: none;">👤 Cadastrar Motorista</a></li>
+                    <li><a href="#" data-page="cadastro_viatura" class="nav-link admin-link" style="display: none;">🚗 Cadastrar Viatura</a></li>
+                    <li><a href="#" data-page="emprestimo_viatura" class="nav-link admin-link" style="display: none;">📝 Empréstimo de Viatura</a></li>
+                    <li><a href="#" data-page="saldo_combustivel" class="nav-link admin-link" style="display: none;">⛽ Saldo de Combustível</a></li>
+                    <li><a href="#" data-page="viaturas_ativas" class="nav-link admin-link" style="display: none;">📊 Viaturas Ativas</a></li>
+					<li><a href="#" data-page="visualizar_avarias" class="nav-link admin-link" style="display: none;">⚠️ Visualizar Avarias</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="contentArea">
+            <!-- Conteúdo será carregado dinamicamente -->
+            <div class="page-content fade-in">
+                <div class="cards-grid">
+                    <div class="card" onclick="frotaSystem.loadPage('uso_viatura')" style="cursor: pointer;">
+                        <h3>🚗 Uso de Viatura</h3>
+                        <p>Registrar uso de viaturas para missões</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('abastecimento')" style="cursor: pointer;">
+                        <h3>⛽ Abastecimento</h3>
+                        <p>Registrar abastecimentos das viaturas</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('avaria')" style="cursor: pointer;">
+                        <h3>🔧 Comunicação de Avaria</h3>
+                        <p>Reportar problemas nas viaturas</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('cadastro_motorista')" style="cursor: pointer; display: none;" id="adminCard1">
+                        <h3>👤 Cadastrar Motorista</h3>
+                        <p>Gerenciar cadastro de motoristas</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('cadastro_viatura')" style="cursor: pointer; display: none;" id="adminCard2">
+                        <h3>🚗 Cadastrar Viatura</h3>
+                        <p>Gerenciar cadastro de viaturas</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('emprestimo_viatura')" style="cursor: pointer; display: none;" id="adminCard3">
+                        <h3>📝 Empréstimo de Viatura</h3>
+                        <p>Gerenciar empréstimos para outras unidades</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('saldo_combustivel')" style="cursor: pointer; display: none;" id="adminCard4">
+                        <h3>⛽ Saldo de Combustível</h3>
+                        <p>Gerenciar saldos das viaturas</p>
+                    </div>
+                    <div class="card" onclick="frotaSystem.loadPage('viaturas_ativas')" style="cursor: pointer; display: none;" id="adminCard5">
+                        <h3>📊 Viaturas Ativas</h3>
+                        <p>Relatório de viaturas em uso</p>
+                    </div>
+					<div class="card" onclick="frotaSystem.loadPage('visualizar_avarias')" style="cursor: pointer; display: none;" id="adminCard6">
+						<h3>⚠️ Visualizar Avarias</h3>
+						<p>Visualizar e gerenciar avarias reportadas</p>
+					</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Secretaria de Defesa Social - Polícia Militar de Pernambuco</p>
+        <p>Dinter-I/4° BPM - Batalhão Barreto de Menezes</p>
+        <p>BR 104, KM 067, Pinheirópolis - Caruaru - PE CEP 55.000-000</p>
+        <p>Fone/fax (81) 3719.9110/9117 - E-mail: viaturas4bpm@hotmail.com</p>
+        <p>Versão 2.0 - Sistema de Gerenciamento de Frota</p>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Botão Home
+        document.getElementById('homeBtn')?.addEventListener('click', function() {
+            location.reload();
+        });
+
+        // Mostrar/ocultar menu admin baseado no tipo de usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = auth.getCurrentUser();
+            if (user && user.isAdmin) {
+                const adminLinks = document.querySelectorAll('.admin-link');
+                adminLinks.forEach(link => {
+                    link.style.display = 'block';
+                });
+                
+                const adminCards = ['adminCard1', 'adminCard2', 'adminCard3', 'adminCard4', 'adminCard5'];
+                adminCards.forEach(cardId => {
+                    const card = document.getElementById(cardId);
+                    if (card) card.style.display = 'block';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Frota - PM</title>
+    <script>
+        // Verificar se já está logado antes de redirecionar
+        const currentUser = localStorage.getItem('pm_currentUser');
+        if (currentUser) {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <p>Redirecionando para o sistema...</p>
+</body>
+</html>

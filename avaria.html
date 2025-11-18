@@ -1,0 +1,151 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>⚠️ Comunicação de Avaria</h2>
+        
+        <div class="comunicado-header">
+            <p><strong>AO:</strong> Chefe da SSTRAN</p>
+            <p><strong>ASSUNTO:</strong> Informação de Viatura</p>
+        </div>
+        
+        <form id="avariaForm">
+            <div class="form-grid">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="avariaData">Data da Verificação</label>
+                        <input type="date" id="avariaData" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="avariaTipoViatura">Tipo de Viatura</label>
+                        <input type="text" id="avariaTipoViatura" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="avariaPlaca">Placa</label>
+                        <input type="text" id="avariaPlaca" required placeholder="ABC-1234" class="placa-mask">
+                    </div>
+                    <div class="form-group">
+                        <label for="avariaKmAtual">KM Atual</label>
+                        <input type="number" id="avariaKmAtual" required min="0" step="1" placeholder="Quilometragem atual">
+                    </div>
+                    <div class="form-group">
+                        <label for="avariaPatrimonio">Patrimônio</label>
+                        <input type="text" id="avariaPatrimonio" required placeholder="Número do patrimônio">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🔍 Alterações/Problemas Identificados:</label>
+                    <div class="avaria-list">
+                        <div class="avaria-item">
+                            <input type="text" class="avaria-descricao" placeholder="Descreva o problema ou alteração..." required>
+                            <button type="button" class="btn-remove-avaria" onclick="removerAvaria(this)">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-secondary" onclick="adicionarAvaria()" style="margin-top: 0.5rem;">
+                        + Adicionar Outro Problema
+                    </button>
+                </div>
+
+                <!-- NOVO CAMPO: Observações/Relato do Motorista -->
+                <div class="form-group full-width">
+                    <label for="avariaObservacoes">📝 Observações / Relato do Motorista</label>
+                    <textarea id="avariaObservacoes" placeholder="Descreva detalhadamente o ocorrido, condições de uso, sintomas observados, ou qualquer informação adicional relevante para a análise da avaria..." rows="4"></textarea>
+                    <small style="color: #666; margin-top: 0.25rem; display: block;">
+                        Este campo é opcional, mas recomendado para fornecer contexto adicional sobre os problemas identificados.
+                    </small>
+                </div>
+
+                <div class="assinatura-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="avariaAssinatura">Assinatura</label>
+                            <input type="text" id="avariaAssinatura" required placeholder="Seu nome de guerra para assinatura">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="avariaGrad">Graduação</label>
+                            <input type="text" id="avariaGrad" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="avariaMatricula">Matrícula</label>
+                            <input type="text" id="avariaMatricula" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="avariaNome">Nome Completo</label>
+                            <input type="text" id="avariaNome" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">📋</span>
+                Enviar Comunicação de Avaria
+            </button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>📋 Comunicações de Avaria Recentes</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Viatura</th>
+                        <th>Problemas</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historicoAvarias">
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">⚠️</span>
+                                <p>Nenhuma comunicação de avaria</p>
+                                <small>As comunicações aparecerão aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Funções globais para os botões
+    function adicionarAvaria() {
+        if (window.frotaSystem) {
+            window.frotaSystem.adicionarAvaria();
+        }
+    }
+
+    function removerAvaria(button) {
+        if (window.frotaSystem) {
+            window.frotaSystem.removerAvaria(button);
+        }
+    }
+
+    // NOVA FUNÇÃO: Preencher automaticamente os campos do usuário logado
+    document.addEventListener('DOMContentLoaded', function() {
+        // Preencher data atual
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('avariaData').value = today;
+        
+        // Tentar preencher dados do usuário se disponível
+        if (window.auth && window.auth.getCurrentUser) {
+            const user = window.auth.getCurrentUser();
+            if (user) {
+                document.getElementById('avariaGrad').value = user.graduacao || '';
+                document.getElementById('avariaMatricula').value = user.matricula || '';
+                document.getElementById('avariaNome').value = user.nome || '';
+                document.getElementById('avariaAssinatura').value = user.nomeGuerra || user.nome || '';
+            }
+        }
+    });
+</script>

@@ -1,0 +1,138 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>Cadastro de Motorista</h2>
+        <form id="cadastroMotoristaForm">
+            <div class="form-grid">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaNomeCompleto">Nome Completo</label>
+                        <input type="text" id="motoristaNomeCompleto" required placeholder="Digite o nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaNomeGuerra">Nome de Guerra</label>
+                        <input type="text" id="motoristaNomeGuerra" required placeholder="Nome de guerra">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaGraduacao">Graduação</label>
+                        <select id="motoristaGraduacao" required>
+                            <option value="">Selecione a graduação...</option>
+                            <option value="CEL">Coronel</option>
+                            <option value="TEN CEL">Tenente-Coronel</option>
+                            <option value="MAJ">Major</option>
+                            <option value="CAP">Capitão</option>
+                            <option value="1º TEN">1º Tenente</option>
+                            <option value="2º TEN">2º Tenente</option>
+                            <option value="ASP">Aspirante</option>
+                            <option value="ST">Subtenente</option>
+                            <option value="1º SGT">1º Sargento</option>
+                            <option value="2º SGT">2º Sargento</option>
+                            <option value="3º SGT">3º Sargento</option>
+                            <option value="CB">Cabo</option>
+                            <option value="SD">Soldado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaMatricula">Matrícula</label>
+                        <input type="text" id="motoristaMatricula" required placeholder="Número da matrícula">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaCodigoCondutor">Código do Condutor</label>
+                        <input type="text" id="motoristaCodigoCondutor" required placeholder="Código do condutor">
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaCPF">CPF</label>
+                        <input type="text" id="motoristaCPF" required placeholder="000.000.000-00" class="cpf-mask">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaTelefone">Número de Telefone</label>
+                        <input type="tel" id="motoristaTelefone" required placeholder="(81) 99999-9999" class="phone-mask">
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaEmail">E-mail</label>
+                        <input type="email" id="motoristaEmail" placeholder="email@exemplo.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaSenha">Senha Inicial</label>
+                        <input type="password" id="motoristaSenha" required placeholder="Senha para acesso ao sistema">
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaConfirmarSenha">Confirmar Senha</label>
+                        <input type="password" id="motoristaConfirmarSenha" required placeholder="Confirme a senha">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaStatus">Status</label>
+                        <select id="motoristaStatus" required>
+                            <option value="ATIVO">Ativo</option>
+                            <option value="INATIVO">Inativo</option>
+                            <option value="FERIAS">Férias</option>
+                            <option value="LICENCA">Licença</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaIsAdmin">Tipo de Acesso</label>
+                        <select id="motoristaIsAdmin" required>
+                            <option value="false">Motorista</option>
+                            <option value="true">Administrador</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cadastroMotoristaError" class="error-message" style="display: none;"></div>
+            <div id="cadastroMotoristaSuccess" class="success-message" style="display: none;"></div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">👤</span>
+                Cadastrar Motorista
+            </button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>Motoristas Cadastrados</h2>
+        <div class="table-actions">
+            <input type="text" id="filtroMotoristas" placeholder="Filtrar motoristas..." class="search-input">
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nome de Guerra</th>
+                        <th>Graduação</th>
+                        <th>Matrícula</th>
+                        <th>Código Condutor</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="listaMotoristas">
+                    <!-- Preenchido via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof frotaSystem !== 'undefined') {
+            frotaSystem.carregarPaginaCadastroMotorista();
+        }
+    });
+</script>

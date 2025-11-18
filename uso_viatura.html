@@ -1,0 +1,165 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>🚗 Registro de Uso de Viatura</h2>
+        <form id="usoViaturaForm">
+            <div class="form-grid">
+                <h3>👤 Dados do Motorista</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaGrad">Graduação</label>
+                        <input type="text" id="motoristaGrad" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaMatricula">Matrícula</label>
+                        <input type="text" id="motoristaMatricula" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="motoristaCPF">CPF</label>
+                        <input type="text" id="motoristaCPF" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="motoristaNome">Nome</label>
+                        <input type="text" id="motoristaNome" readonly>
+                    </div>
+                </div>
+                
+                <h3>🚙 Dados da Viatura</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaPatrimonio">Viatura</label>
+                        <select id="viaturaPatrimonio" required>
+                            <option value="">Selecione a viatura...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaEmprego">Emprego/Missão</label>
+                        <input type="text" id="viaturaEmprego" required placeholder="Descreva a missão ou destino">
+                    </div>
+                </div>
+                
+                <h3>📅 Dados Iniciais do Serviço</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataInicial">Data</label>
+                        <input type="date" id="dataInicial" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="horaInicial">Hora de Saída</label>
+                        <input type="time" id="horaInicial" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="kmInicial">KM Inicial</label>
+                        <input type="number" id="kmInicial" required min="0" step="1" placeholder="Quilometragem no início">
+                    </div>
+                </div>
+                
+                <h3>🏁 Dados Finais do Serviço</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dataFinal">Data de Retorno</label>
+                        <input type="date" id="dataFinal">
+                    </div>
+                    <div class="form-group">
+                        <label for="horaFinal">Hora de Retorno</label>
+                        <input type="time" id="horaFinal">
+                    </div>
+                    <div class="form-group">
+                        <label for="kmFinal">KM Final</label>
+                        <input type="number" id="kmFinal" min="0" step="1" placeholder="Quilometragem no retorno">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="observacoes">Observações</label>
+                        <textarea id="observacoes" placeholder="Observações adicionais sobre o uso da viatura..."></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">✓</span>
+                Registrar Uso da Viatura
+            </button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>📋 Registros Recentes de Uso</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Viatura</th>
+                        <th>Motorista</th>
+                        <th>KM Inicial</th>
+                        <th>KM Final</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="registrosUsoTable">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">📝</span>
+                                <p>Nenhum registro encontrado</p>
+                                <small>Os registros de uso aparecerão aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Fechar/Editar Mapa -->
+<div id="modalFecharMapa" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <h2 id="modalFecharMapaTitle">Fechar Mapa</h2>
+        <form id="formFecharMapa">
+            <input type="hidden" id="fecharMapaRegistroId">
+            <div class="form-grid">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fecharDataFinal">Data de Retorno</label>
+                        <input type="date" id="fecharDataFinal" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fecharHoraFinal">Hora de Retorno</label>
+                        <input type="time" id="fecharHoraFinal" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fecharKmFinal">KM Final</label>
+                        <input type="number" id="fecharKmFinal" required min="0" step="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="fecharObservacoes">Observações</label>
+                        <textarea id="fecharObservacoes" placeholder="Observações adicionais..."></textarea>
+                    </div>
+                </div>
+                <div id="tempoEdicaoInfo" class="info-card" style="display: none;">
+                    <p><strong>Atenção:</strong> Você pode editar os dados finais por até 20 minutos após o fechamento.</p>
+                    <p id="tempoRestante" style="font-weight: bold; color: var(--primary-color);"></p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn-primary" id="btnSalvarFecharMapa">Salvar</button>
+                <button type="button" class="btn-secondary" onclick="frotaSystem.fecharModalFecharMapa()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Funções do modal serão implementadas no app.js
+</script>

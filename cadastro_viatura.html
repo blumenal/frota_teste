@@ -1,0 +1,160 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>🚙 Cadastro de Viatura</h2>
+        <form id="cadastroViaturaForm">
+            <div class="form-grid">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaPatrimonio">Patrimônio</label>
+                        <input type="text" id="viaturaPatrimonio" required placeholder="Número do patrimônio">
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaPlaca">Placa</label>
+                        <input type="text" id="viaturaPlaca" required placeholder="ABC-1234" class="placa-mask">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaTipo">Tipo de Viatura</label>
+                        <select id="viaturaTipo" required>
+                            <option value="">Selecione o tipo...</option>
+                            <option value="SEDAN">Sedan</option>
+                            <option value="HATCH">Hatch</option>
+                            <option value="SUV">SUV</option>
+                            <option value="PICKUP">Pickup</option>
+                            <option value="MOTO">Moto</option>
+                            <option value="CAMINHAO">Caminhão</option>
+                            <option value="ONIBUS">Ônibus</option>
+                            <option value="BLINDADO">Viatura Blindada</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaModelo">Modelo</label>
+                        <input type="text" id="viaturaModelo" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaAno">Ano</label>
+                        <input type="number" id="viaturaAno" required min="1990" max="2030" placeholder="2024">
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaCor">Cor</label>
+                        <input type="text" id="viaturaCor" required placeholder="Cor da viatura">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaLocadora">Locadora</label>
+                        <input type="text" id="viaturaLocadora" required placeholder="Nome da locadora">
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaNumeroCartao">Número do Cartão</label>
+                        <input type="text" id="viaturaNumeroCartao" required placeholder="Número do cartão de abastecimento">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaCombustivel">Tipo de Combustível</label>
+                        <select id="viaturaCombustivel" required>
+                            <option value="">Selecione...</option>
+                            <option value="GASOLINA">Gasolina</option>
+                            <option value="GASOLINA_ADITIVADA">Gasolina Aditivada</option>
+                            <option value="ETANOL">Etanol</option>
+                            <option value="DIESEL">Diesel</option>
+                            <option value="DIESEL_S10">Diesel S10</option>
+                            <option value="FLEX">Flex</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaSaldo">Saldo Inicial (R$)</label>
+                        <input type="number" id="viaturaSaldo" step="0.01" required min="0" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="viaturaStatus">Status</label>
+                        <select id="viaturaStatus" required>
+                            <option value="ATIVA">Ativa</option>
+                            <option value="INATIVA">Inativa</option>
+                            <option value="MANUTENCAO">Em Manutenção</option>
+                            <option value="RESERVA">Reserva</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="viaturaKmAtual">KM Atual</label>
+                        <input type="number" id="viaturaKmAtual" required min="0" step="1" placeholder="Quilometragem atual">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="viaturaObservacoes">Observações</label>
+                        <textarea id="viaturaObservacoes" placeholder="Observações sobre a viatura..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cadastroViaturaError" class="error-message" style="display: none;"></div>
+            <div id="cadastroViaturaSuccess" class="success-message" style="display: none;"></div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">🚗</span>
+                Cadastrar Viatura
+            </button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>📋 Viaturas Cadastradas</h2>
+        <div class="table-actions">
+            <input type="text" id="filtroViaturas" placeholder="Filtrar viaturas..." class="search-input">
+            <select id="filtroStatusViatura" class="filter-select">
+                <option value="">Todos os status</option>
+                <option value="ATIVA">Ativas</option>
+                <option value="INATIVA">Inativas</option>
+                <option value="MANUTENCAO">Em Manutenção</option>
+            </select>
+        </div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Patrimônio</th>
+                        <th>Placa</th>
+                        <th>Modelo</th>
+                        <th>Saldo (R$)</th>
+                        <th>KM Atual</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="listaViaturas">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">🚗</span>
+                                <p>Nenhuma viatura cadastrada</p>
+                                <small>As viaturas cadastradas aparecerão aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof frotaSystem !== 'undefined') {
+            // Esta função será implementada no app.js
+            console.log('Página de cadastro de viatura carregada');
+        }
+    });
+</script>

@@ -1,0 +1,237 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>📋 Empréstimo de Viatura para Outra Unidade</h2>
+        <form id="emprestimoViaturaForm">
+            <div class="form-grid">
+                <h3>👤 Dados do Condutor</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoGrad">Graduação</label>
+                        <select id="emprestimoGrad" required>
+                            <option value="">Selecione...</option>
+                            <option value="CEL">Coronel</option>
+                            <option value="TEN CEL">Tenente-Coronel</option>
+                            <option value="MAJ">Major</option>
+                            <option value="CAP">Capitão</option>
+                            <option value="1º TEN">1º Tenente</option>
+                            <option value="2º TEN">2º Tenente</option>
+                            <option value="ASP">Aspirante</option>
+                            <option value="ST">Subtenente</option>
+                            <option value="1º SGT">1º Sargento</option>
+                            <option value="2º SGT">2º Sargento</option>
+                            <option value="3º SGT">3º Sargento</option>
+                            <option value="CB">Cabo</option>
+                            <option value="SD">Soldado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoMatricula">Matrícula</label>
+                        <input type="text" id="emprestimoMatricula" required placeholder="Matrícula do condutor">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoNome">Nome Completo</label>
+                        <input type="text" id="emprestimoNome" required placeholder="Nome completo do condutor">
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoCPF">CPF</label>
+                        <input type="text" id="emprestimoCPF" required placeholder="000.000.000-00" class="cpf-mask">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoUnidade">Unidade de Origem</label>
+                        <input type="text" id="emprestimoUnidade" required placeholder="Unidade do condutor">
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoTelefone">Telefone</label>
+                        <input type="tel" id="emprestimoTelefone" required placeholder="(81) 99999-9999" class="phone-mask">
+                    </div>
+                </div>
+
+                <h3>🚙 Dados da Viatura</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoPatrimonio">Viatura</label>
+                        <select id="emprestimoPatrimonio" required>
+                            <option value="">Selecione a viatura...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoEmprego">Finalidade do Empréstimo</label>
+                        <input type="text" id="emprestimoEmprego" required placeholder="Descreva a finalidade do empréstimo">
+                    </div>
+                </div>
+                
+                <h3>📅 Período do Empréstimo</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoDataInicial">Data de Saída</label>
+                        <input type="date" id="emprestimoDataInicial" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoHoraInicial">Hora de Saída</label>
+                        <input type="time" id="emprestimoHoraInicial" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoDataFinal">Data de Retorno Prevista</label>
+                        <input type="date" id="emprestimoDataFinal" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoHoraFinal">Hora de Retorno Prevista</label>
+                        <input type="time" id="emprestimoHoraFinal" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoKmInicial">KM Inicial</label>
+                        <input type="number" id="emprestimoKmInicial" required min="0" step="1" placeholder="Quilometragem no início">
+                    </div>
+                    <div class="form-group">
+                        <label for="emprestimoKmPrevisto">KM Previsto de Retorno</label>
+                        <input type="number" id="emprestimoKmPrevisto" min="0" step="1" placeholder="Estimativa de KM no retorno">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="emprestimoObservacoes">Observações</label>
+                        <textarea id="emprestimoObservacoes" placeholder="Observações sobre o empréstimo..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emprestimoResponsavel">Responsável pelo Empréstimo</label>
+                        <input type="text" id="emprestimoResponsavel" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">📝</span>
+                Registrar Empréstimo
+            </button>
+        </form>
+    </div>
+
+    <div class="form-section">
+        <h2>📋 Empréstimos Ativos</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Viatura</th>
+                        <th>Condutor</th>
+                        <th>Unidade</th>
+                        <th>Período</th>
+                        <th>KM Inicial</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="listaEmprestimosAtivos">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">📋</span>
+                                <p>Nenhum empréstimo ativo</p>
+                                <small>Os empréstimos ativos aparecerão aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h2>📊 Histórico de Empréstimos</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Viatura</th>
+                        <th>Condutor</th>
+                        <th>Período</th>
+                        <th>KM Inicial</th>
+                        <th>KM Final</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historicoEmprestimos">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">📊</span>
+                                <p>Nenhum empréstimo no histórico</p>
+                                <small>O histórico de empréstimos aparecerá aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof frotaSystem !== 'undefined') {
+            // Esta função será implementada no app.js
+            console.log('Página de empréstimo de viatura carregada');
+            
+            // Configurar máscaras para os campos do empréstimo
+            configurarMascarasEmprestimo();
+        }
+
+        function configurarMascarasEmprestimo() {
+            // Máscara para CPF no empréstimo
+            const cpfInput = document.getElementById('emprestimoCPF');
+            if (cpfInput) {
+                cpfInput.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, '');
+                    if (value.length > 3) {
+                        value = value.replace(/^(\d{3})(\d)/, '$1.$2');
+                    }
+                    if (value.length > 6) {
+                        value = value.replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3');
+                    }
+                    if (value.length > 9) {
+                        value = value.replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4');
+                    }
+                    e.target.value = value.substring(0, 14);
+                });
+            }
+
+			// Máscara para telefone no empréstimo - CORRIGIDA
+			const telefoneInput = document.getElementById('emprestimoTelefone');
+			if (telefoneInput) {
+				telefoneInput.addEventListener('input', function(e) {
+					let value = e.target.value.replace(/\D/g, '');
+					
+					// Formato: (81) 99999-9999
+					if (value.length <= 11) {
+						if (value.length > 0) {
+							value = value.replace(/^(\d{0,2})/, '($1');
+						}
+						if (value.length > 3) {
+							value = value.replace(/^\((\d{2})(\d)/, '($1) $2');
+						}
+						if (value.length > 9) {
+							value = value.replace(/(\d{5})(\d)/, '$1-$2');
+						}
+					}
+					e.target.value = value.substring(0, 15);
+				});
+			}
+        }
+    });
+</script>

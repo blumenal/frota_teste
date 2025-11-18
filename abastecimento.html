@@ -1,0 +1,103 @@
+<div class="page-content fade-in">
+    <div class="form-section">
+        <h2>⛽ Registro de Abastecimento</h2>
+        <form id="abastecimentoForm">
+            <div class="form-grid">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="abastecimentoPlaca">Viatura</label>
+                        <select id="abastecimentoPlaca" required>
+                            <option value="">Selecione a viatura...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="abastecimentoSaldo">Saldo Disponível</label>
+                        <input type="text" id="abastecimentoSaldo" readonly class="saldo-disponivel" value="R$ 0,00">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="abastecimentoData">Data do Abastecimento</label>
+                        <input type="date" id="abastecimentoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="abastecimentoHora">Hora</label>
+                        <input type="time" id="abastecimentoHora" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="abastecimentoKm">KM Atual da Viatura</label>
+                        <input type="number" id="abastecimentoKm" required min="0" step="1" placeholder="Quilometragem atual">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="abastecimentoLitros">Quantidade de Litros</label>
+                        <input type="number" id="abastecimentoLitros" step="0.01" required min="0.1" placeholder="Ex: 45.50">
+                    </div>
+                    <div class="form-group">
+                        <label for="abastecimentoValor">Valor Total (R$)</label>
+                        <input type="number" id="abastecimentoValor" step="0.01" required min="0.01" placeholder="Ex: 250.75">
+                    </div>
+                    <div class="form-group">
+                        <label for="abastecimentoPosto">Posto de Abastecimento</label>
+                        <input type="text" id="abastecimentoPosto" required placeholder="Nome do posto">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="abastecimentoCombustivel">Tipo de Combustível</label>
+                        <select id="abastecimentoCombustivel" required>
+                            <option value="">Selecione o combustível...</option>
+                            <option value="GASOLINA">Gasolina Comum</option>
+                            <option value="GASOLINA_ADITIVADA">Gasolina Aditivada</option>
+                            <option value="ETANOL">Etanol</option>
+                            <option value="DIESEL">Diesel</option>
+                            <option value="DIESEL_S10">Diesel S10</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="saldoInsuficiente" class="error-message" style="display: none;">
+                ❌ Saldo insuficiente para realizar este abastecimento.
+            </div>
+            
+            <button type="submit" class="btn-primary">
+                <span class="btn-icon">⛽</span>
+                Registrar Abastecimento
+            </button>
+        </form>
+    </div>
+    
+    <div class="form-section">
+        <h2>📊 Histórico de Abastecimentos</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Viatura</th>
+                        <th>Combustível</th>
+                        <th>Litros</th>
+                        <th>Valor (R$)</th>
+                        <th>KM</th>
+                    </tr>
+                </thead>
+                <tbody id="historicoAbastecimentos">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem;">
+                            <div style="color: #6c757d;">
+                                <span style="font-size: 3rem;">⛽</span>
+                                <p>Nenhum abastecimento registrado</p>
+                                <small>Os abastecimentos aparecerão aqui</small>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
