@@ -30,23 +30,22 @@ class AuthSystem {
         localStorage.setItem('pm_users', JSON.stringify(this.users));
     }
 
-    login(matricula, senha) {
-        const user = this.users.find(u => 
-            u.matricula === matricula && 
-            u.senha === senha && 
-            u.ativo !== false
-        );
-        
-        if (user) {
-            this.currentUser = user;
-            localStorage.setItem('pm_currentUser', JSON.stringify(user));
-            
-            // Registrar login
-            this.registrarLogin(user);
-            return true;
-        }
-        return false;
-    }
+	// Substituir a função de login no auth.js
+	async function login(matricula, senha) {
+		try {
+			const user = await DataService.login({ matricula, senha });
+			
+			if (user) {
+				localStorage.setItem('pm_currentUser', JSON.stringify(user));
+				window.location.href = 'dashboard.html';
+				return true;
+			}
+		} catch (error) {
+			console.error('Erro no login:', error);
+			showLoginError(error.message || 'Matrícula ou senha incorretos');
+			return false;
+		}
+	}
 
     registrarLogin(user) {
         const logins = JSON.parse(localStorage.getItem('pm_login_logs')) || [];

@@ -1,17 +1,20 @@
 // Sistema principal da aplicação
 class FrotaSystem {
     constructor() {
-        this.motoristas = JSON.parse(localStorage.getItem('pm_motoristas')) || [];
-        this.viaturas = JSON.parse(localStorage.getItem('pm_viaturas')) || [];
-        this.registrosUso = JSON.parse(localStorage.getItem('pm_registros_uso')) || [];
-        this.avarias = JSON.parse(localStorage.getItem('pm_avarias')) || [];
-        this.abastecimentos = JSON.parse(localStorage.getItem('pm_abastecimentos')) || [];
-        this.emprestimos = JSON.parse(localStorage.getItem('pm_emprestimos')) || [];
+        // REMOVER: localStorage e substituir por arrays vazios
+        this.motoristas = [];
+        this.viaturas = [];
+        this.registrosUso = [];
+        this.avarias = [];
+        this.abastecimentos = [];
+        this.emprestimos = [];
         
         this.init();
     }
 
-    init() {
+    async init() {
+        // ADICIONAR: Carregar dados do SQLite
+        await this.carregarDadosIniciais();
         this.loadUserInfo();
         this.setupNavigation();
         this.setupMobileMenu();
@@ -20,6 +23,41 @@ class FrotaSystem {
         this.verificarResetMensal();
         this.limparUsuariosExcluidos();
         this.setupModalEvents(); // NOVO: Configurar eventos do modal
+    }
+
+    // NOVA FUNÇÃO: Carregar dados iniciais do SQLite
+    async carregarDadosIniciais() {
+        try {
+            // Carregar todas as entidades do SQLite
+            const [
+                motoristasData, 
+                viaturasData, 
+                registrosUsoData, 
+                avariasData, 
+                abastecimentosData, 
+                emprestimosData
+            ] = await Promise.all([
+                DataService.getMotoristas(),
+                DataService.getViaturas(),
+                DataService.getUsoViaturas(),
+                DataService.getAvarias(),
+                DataService.getAbastecimentos(),
+                DataService.getEmprestimos()
+            ]);
+
+            // Atribuir aos arrays locais
+            this.motoristas = motoristasData || [];
+            this.viaturas = viaturasData || [];
+            this.registrosUso = registrosUsoData || [];
+            this.avarias = avariasData || [];
+            this.abastecimentos = abastecimentosData || [];
+            this.emprestimos = emprestimosData || [];
+
+            console.log('Dados carregados do SQLite com sucesso');
+        } catch (error) {
+            console.error('Erro ao carregar dados do SQLite:', error);
+            // Manter arrays vazios em caso de erro
+        }
     }
 
     // NOVA FUNÇÃO: Configurar eventos do modal
@@ -81,15 +119,15 @@ class FrotaSystem {
     }
 
     showAdminCards() {
-		const user = auth.getCurrentUser();
-		if (user && user.isAdmin) {
-			const adminCards = ['adminCard1', 'adminCard2', 'adminCard3', 'adminCard4', 'adminCard5', 'adminCard6'];
-			adminCards.forEach(cardId => {
-				const card = document.getElementById(cardId);
-				if (card) card.style.display = 'block';
-			});
-		}
-	}
+        const user = auth.getCurrentUser();
+        if (user && user.isAdmin) {
+            const adminCards = ['adminCard1', 'adminCard2', 'adminCard3', 'adminCard4', 'adminCard5', 'adminCard6'];
+            adminCards.forEach(cardId => {
+                const card = document.getElementById(cardId);
+                if (card) card.style.display = 'block';
+            });
+        }
+    }
 
     loadUserInfo() {
         const user = auth.getCurrentUser();
@@ -173,11 +211,11 @@ class FrotaSystem {
                         this.loadViaturasAtivasPage(contentArea);
                     }
                     break;
-				case 'visualizar_avarias':
-					if (this.checkAdminAccess()) {
-						this.loadVisualizarAvariasPage(contentArea);
-					}
-					break;
+                case 'visualizar_avarias':
+                    if (this.checkAdminAccess()) {
+                        this.loadVisualizarAvariasPage(contentArea);
+                    }
+                    break;
                 default:
                     this.loadHomePage(contentArea);
             }
@@ -236,679 +274,461 @@ class FrotaSystem {
     }
 
     // FUNÇÃO: Verificar reset mensal do saldo
-    verificarResetMensal() {
+    async verificarResetMensal() {
         const hoje = new Date();
         const primeiroDiaMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         const ultimoReset = localStorage.getItem('pm_ultimo_reset_saldo');
         
         if (!ultimoReset || new Date(ultimoReset) < primeiroDiaMes) {
-            this.resetarSaldosMensais();
+            await this.resetarSaldosMensais();
             localStorage.setItem('pm_ultimo_reset_saldo', hoje.toISOString());
         }
     }
 
     // FUNÇÃO: Resetar saldos para R$ 3.000,00
-    resetarSaldosMensais() {
-        this.viaturas.forEach(viatura => {
-            if (viatura.status === 'ATIVA') {
-                viatura.saldo = 3000.00;
+    async resetarSaldosMensais() {
+        try {
+            // Atualizar saldo de todas as viaturas ativas
+            for (const viatura of this.viaturas) {
+                if (viatura.status === 'ATIVA') {
+                    await DataService.updateViatura(viatura.id, {
+                        ...viatura,
+                        saldo: 3000.00
+                    });
+                }
             }
-        });
-        localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
-        console.log('Saldos mensais resetados para R$ 3.000,00');
+            
+            // Recarregar dados atualizados
+            await this.carregarDadosIniciais();
+            console.log('Saldos mensais resetados para R$ 3.000,00');
+        } catch (error) {
+            console.error('Erro ao resetar saldos:', error);
+        }
     }
-	
-	// NOVA FUNÇÃO: Carregar página de visualização de avarias para administradores
-	loadVisualizarAvariasPage(container) {
-		container.innerHTML = `
-			<div class="page-content fade-in">
-				<div class="form-section">
-					<h2>⚠️ Visualização de Avarias Reportadas</h2>
-					
-					<div class="filtros-container">
-						<div class="form-row">
-							<div class="form-group">
-								<label for="filtroPeriodoAvarias">Período</label>
-								<select id="filtroPeriodoAvarias">
-									<option value="todos">Todos os Registros</option>
-									<option value="hoje">Hoje</option>
-									<option value="ontem">Ontem</option>
-									<option value="semana">Esta Semana</option>
-									<option value="mes">Este Mês</option>
-									<option value="especifico">Data Específica</option>
-								</select>
-							</div>
-							<div class="form-group" id="dataEspecificaAvariasContainer" style="display: none;">
-								<label for="filtroDataEspecificaAvarias">Data Específica</label>
-								<input type="date" id="filtroDataEspecificaAvarias">
-							</div>
-							<div class="form-group">
-								<label for="filtroStatusAvaria">Status</label>
-								<select id="filtroStatusAvaria">
-									<option value="todos">Todos os Status</option>
-									<option value="Pendente">Pendente</option>
-									<option value="Em Análise">Em Análise</option>
-									<option value="Em Manutenção">Em Manutenção</option>
-									<option value="Resolvida">Resolvida</option>
-								</select>
-							</div>
-						</div>
-						
-						<div class="form-row">
-							<div class="form-group">
-								<input type="text" id="filtroBuscaAvarias" placeholder="Buscar por placa, patrimônio ou motorista..." class="search-input">
-							</div>
-						</div>
 
-						<div class="form-row">
-							<div class="form-group">
-								<button type="button" class="btn-primary" onclick="frotaSystem.filtrarAvarias()">
-									<span class="btn-icon">🔍</span>
-									Aplicar Filtros
-								</button>
-								<button type="button" class="btn-secondary" onclick="frotaSystem.exportarRelatorioAvarias('pdf')">
-									<span class="btn-icon">📄</span>
-									Exportar PDF
-								</button>
-								<button type="button" class="btn-secondary" onclick="frotaSystem.limparFiltrosAvarias()">
-									<span class="btn-icon">🔄</span>
-									Limpar Filtros
-								</button>
-							</div>
-						</div>
-					</div>
-
-					<div class="resumo-cards">
-						<div class="cards-grid">
-							<div class="card">
-								<h3>Total de Avarias</h3>
-								<p class="total-avarias">${this.avarias.length}</p>
-							</div>
-							<div class="card">
-								<h3>Pendentes</h3>
-								<p class="avarias-pendentes">${this.avarias.filter(a => a.status === 'Pendente').length}</p>
-							</div>
-							<div class="card">
-								<h3>Em Manutenção</h3>
-								<p class="avarias-manutencao">${this.avarias.filter(a => a.status === 'Em Manutenção').length}</p>
-							</div>
-							<div class="card">
-								<h3>Resolvidas</h3>
-								<p class="avarias-resolvidas">${this.avarias.filter(a => a.status === 'Resolvida').length}</p>
-							</div>
-						</div>
-					</div>
-
-					<!-- Tabela de Avarias -->
-					<div class="table-container-optimized">
-						<table class="data-table-optimized" id="tabelaAvarias">
-							<thead>
-								<tr>
-									<th>Data</th>
-									<th>Viatura</th>
-									<th>Placa</th>
-									<th>Patrimônio</th>
-									<th>Problemas</th>
-									<th>Motorista</th>
-									<th>Status</th>
-									<th>Ações</th>
-								</tr>
-							</thead>
-							<tbody id="listaAvarias">
-								${this.gerarListaAvarias()}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-
-			<!-- Modal para alterar status -->
-			<div id="modalStatusAvaria" class="modal-overlay" style="display: none;">
-				<div class="modal-content" style="max-width: 500px;">
-					<h2>Alterar Status da Avaria</h2>
-					<form id="formStatusAvaria">
-						<input type="hidden" id="avariaIdStatus">
-						<div class="form-grid">
-							<div class="form-row">
-								<div class="form-group full-width">
-									<label for="novoStatusAvaria">Novo Status</label>
-									<select id="novoStatusAvaria" required>
-										<option value="Pendente">Pendente</option>
-										<option value="Em Análise">Em Análise</option>
-										<option value="Em Manutenção">Em Manutenção</option>
-										<option value="Resolvida">Resolvida</option>
-									</select>
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-group full-width">
-									<label for="observacaoStatus">Observação (opcional)</label>
-									<textarea id="observacaoStatus" placeholder="Observação sobre a alteração de status..." rows="3"></textarea>
-								</div>
-							</div>
-						</div>
-						<div style="display: flex; gap: 1rem;">
-							<button type="submit" class="btn-primary">Salvar</button>
-							<button type="button" class="btn-secondary" onclick="frotaSystem.fecharModalStatus()">Cancelar</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		`;
-
-		// Configurar eventos dos filtros
-		document.getElementById('filtroPeriodoAvarias').addEventListener('change', (e) => {
-			const dataEspecificaContainer = document.getElementById('dataEspecificaAvariasContainer');
-			if (e.target.value === 'especifico') {
-				dataEspecificaContainer.style.display = 'block';
-			} else {
-				dataEspecificaContainer.style.display = 'none';
-			}
-		});
-
-		// Configurar busca em tempo real
-		document.getElementById('filtroBuscaAvarias').addEventListener('input', (e) => {
-			this.filtrarAvarias();
-		});
-
-		// Configurar formulário de status
-		document.getElementById('formStatusAvaria').addEventListener('submit', (e) => {
-			e.preventDefault();
-			this.salvarStatusAvaria();
-		});
-
-		// Configurar tooltips
-		setTimeout(() => {
-			const cells = document.querySelectorAll('.data-table-optimized td');
-			cells.forEach(cell => {
-				if (cell.scrollWidth > cell.clientWidth) {
-					cell.setAttribute('title', cell.textContent);
-				}
-			});
-		}, 100);
-	}
-	
-	// FUNÇÃO: Gerar lista de avarias
-	gerarListaAvarias(avariasFiltradas = null) {
-		const avarias = avariasFiltradas || this.avarias;
-		
-		if (avarias.length === 0) {
-			return `
-				<tr>
-					<td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
-						Nenhuma avaria encontrada para os filtros selecionados
-					</td>
-				</tr>
-			`;
-		}
-
-		// Ordenar por data mais recente
-		const avariasOrdenadas = [...avarias].sort((a, b) => new Date(b.data) - new Date(a.data));
-
-		return avariasOrdenadas.map(avaria => {
-			const primeiroProblema = avaria.problemas.length > 0 ? avaria.problemas[0] : 'Nenhum problema informado';
-			const problemasText = primeiroProblema.length > 50 ? 
-				primeiroProblema.substring(0, 47) + '...' : primeiroProblema;
-			
-			const motoristaText = `${avaria.graduacao} ${avaria.assinatura}`;
-
-			return `
-				<tr>
-					<td title="${new Date(avaria.data).toLocaleDateString('pt-BR')}">
-						${new Date(avaria.data).toLocaleDateString('pt-BR')}
-					</td>
-					<td title="${avaria.tipoViatura}">${avaria.tipoViatura}</td>
-					<td>${avaria.placa}</td>
-					<td>${avaria.patrimonio}</td>
-					<td title="${primeiroProblema}">${problemasText}</td>
-					<td title="${motoristaText}">${motoristaText}</td>
-					<td>
-						<span class="status-badge-compact ${this.getStatusClassAvaria(avaria.status)}">
-							${avaria.status}
-						</span>
-					</td>
-					<td>
-						<button class="btn-action btn-view" onclick="frotaSystem.verDetalhesAvaria(${avaria.id})" title="Ver detalhes">
-							👁️
-						</button>
-						<button class="btn-action btn-edit" onclick="frotaSystem.abrirModalStatus(${avaria.id})" title="Alterar status">
-							✏️
-						</button>
-					</td>
-				</tr>
-			`;
-		}).join('');
-	}
-
-	// FUNÇÃO: Obter classe CSS para o status da avaria
-	getStatusClassAvaria(status) {
-		switch(status) {
-			case 'Pendente':
-				return 'status-pendente';
-			case 'Em Análise':
-				return 'status-manutencao';
-			case 'Em Manutenção':
-				return 'status-manutencao';
-			case 'Resolvida':
-				return 'status-ativo';
-			default:
-				return 'status-pendente';
-		}
-	}
-
-	// FUNÇÃO: Filtrar avarias
-	filtrarAvarias() {
-		const periodo = document.getElementById('filtroPeriodoAvarias').value;
-		const status = document.getElementById('filtroStatusAvaria').value;
-		const busca = document.getElementById('filtroBuscaAvarias').value.toLowerCase();
-		const hoje = new Date();
-		
-		let avariasFiltradas = this.avarias;
-
-		// Filtrar por período
-		if (periodo !== 'todos') {
-			let dataFiltro;
-			
-			switch(periodo) {
-				case 'hoje':
-					const hojeStr = hoje.toISOString().split('T')[0];
-					avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === hojeStr);
-					break;
-				case 'ontem':
-					const ontem = new Date(hoje);
-					ontem.setDate(hoje.getDate() - 1);
-					const ontemStr = ontem.toISOString().split('T')[0];
-					avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === ontemStr);
-					break;
-				case 'semana':
-					const inicioSemana = new Date(hoje);
-					inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-					avariasFiltradas = avariasFiltradas.filter(avaria => 
-						new Date(avaria.data) >= inicioSemana
-					);
-					break;
-				case 'mes':
-					const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-					avariasFiltradas = avariasFiltradas.filter(avaria => 
-						new Date(avaria.data) >= inicioMes
-					);
-					break;
-				case 'especifico':
-					const dataEspecifica = document.getElementById('filtroDataEspecificaAvarias').value;
-					if (dataEspecifica) {
-						avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === dataEspecifica);
-					}
-					break;
-			}
-		}
-
-		// Filtrar por status
-		if (status !== 'todos') {
-			avariasFiltradas = avariasFiltradas.filter(avaria => avaria.status === status);
-		}
-
-		// Filtrar por busca
-		if (busca) {
-			avariasFiltradas = avariasFiltradas.filter(avaria => 
-				avaria.placa.toLowerCase().includes(busca) ||
-				avaria.patrimonio.toLowerCase().includes(busca) ||
-				avaria.assinatura.toLowerCase().includes(busca) ||
-				avaria.tipoViatura.toLowerCase().includes(busca) ||
-				avaria.problemas.some(problema => problema.toLowerCase().includes(busca))
-			);
-		}
-
-		// Atualizar a tabela
-		document.getElementById('listaAvarias').innerHTML = this.gerarListaAvarias(avariasFiltradas);
-
-		// Atualizar contadores
-		this.atualizarContadoresAvarias(avariasFiltradas);
-
-		// Configurar tooltips novamente
-		setTimeout(() => {
-			const cells = document.querySelectorAll('.data-table-optimized td');
-			cells.forEach(cell => {
-				if (cell.scrollWidth > cell.clientWidth) {
-					cell.setAttribute('title', cell.textContent);
-				}
-			});
-		}, 100);
-	}
-
-	// FUNÇÃO: Atualizar contadores de avarias
-	atualizarContadoresAvarias(avariasFiltradas = null) {
-		const avarias = avariasFiltradas || this.avarias;
-		
-		document.querySelector('.total-avarias').textContent = avarias.length;
-		document.querySelector('.avarias-pendentes').textContent = avarias.filter(a => a.status === 'Pendente').length;
-		document.querySelector('.avarias-manutencao').textContent = avarias.filter(a => a.status === 'Em Manutenção').length;
-		document.querySelector('.avarias-resolvidas').textContent = avarias.filter(a => a.status === 'Resolvida').length;
-	}
-
-	// FUNÇÃO: Limpar filtros
-	limparFiltrosAvarias() {
-		document.getElementById('filtroPeriodoAvarias').value = 'todos';
-		document.getElementById('filtroStatusAvaria').value = 'todos';
-		document.getElementById('filtroBuscaAvarias').value = '';
-		document.getElementById('dataEspecificaAvariasContainer').style.display = 'none';
-		
-		this.filtrarAvarias();
-	}
-
-	// FUNÇÃO: Abrir modal para alterar status
-	abrirModalStatus(avariaId) {
-		const avaria = this.avarias.find(a => a.id === avariaId);
-		if (!avaria) {
-			alert('Avaria não encontrada!');
-			return;
-		}
-
-		document.getElementById('avariaIdStatus').value = avariaId;
-		document.getElementById('novoStatusAvaria').value = avaria.status;
-		document.getElementById('observacaoStatus').value = '';
-		
-		document.getElementById('modalStatusAvaria').style.display = 'flex';
-	}
-
-	// FUNÇÃO: Fechar modal de status
-	fecharModalStatus() {
-		document.getElementById('modalStatusAvaria').style.display = 'none';
-	}
-
-	// FUNÇÃO: Salvar alteração de status
-	salvarStatusAvaria() {
-		const avariaId = parseInt(document.getElementById('avariaIdStatus').value);
-		const novoStatus = document.getElementById('novoStatusAvaria').value;
-		const observacao = document.getElementById('observacaoStatus').value;
-
-		const avariaIndex = this.avarias.findIndex(a => a.id === avariaId);
-		if (avariaIndex === -1) {
-			alert('Avaria não encontrada!');
-			return;
-		}
-
-		// Atualizar status
-		this.avarias[avariaIndex].status = novoStatus;
-		
-		// Adicionar histórico de alterações se houver observação
-		if (observacao.trim()) {
-			if (!this.avarias[avariaIndex].historico) {
-				this.avarias[avariaIndex].historico = [];
-			}
-			
-			this.avarias[avariaIndex].historico.push({
-				data: new Date().toISOString(),
-				status: novoStatus,
-				observacao: observacao,
-				usuario: auth.getCurrentUser()?.nome || 'Administrador'
-			});
-		}
-
-		// Salvar no localStorage
-		localStorage.setItem('pm_avarias', JSON.stringify(this.avarias));
-
-		// Fechar modal e recarregar
-		this.fecharModalStatus();
-		this.filtrarAvarias();
-		
-		alert('Status atualizado com sucesso!');
-	}
-	
-	// FUNÇÃO: Exportar relatório de avarias para PDF
-	exportarRelatorioAvarias(tipo) {
-		const periodo = document.getElementById('filtroPeriodoAvarias').value;
-		const status = document.getElementById('filtroStatusAvaria').value;
-		const busca = document.getElementById('filtroBuscaAvarias').value;
-		
-		const periodoTexto = document.getElementById('filtroPeriodoAvarias').options[document.getElementById('filtroPeriodoAvarias').selectedIndex].text;
-		const statusTexto = document.getElementById('filtroStatusAvaria').options[document.getElementById('filtroStatusAvaria').selectedIndex].text;
-		
-		const nomeArquivo = `Relatorio_Avarias_${new Date().toISOString().split('T')[0]}`;
-
-		if (tipo === 'pdf') {
-			this.exportarAvariasParaPDF(periodo, status, busca, periodoTexto, statusTexto, nomeArquivo);
-		}
-	}
-
-	// FUNÇÃO: Exportar avarias para PDF
-	exportarAvariasParaPDF(periodo, status, busca, periodoTexto, statusTexto, nomeArquivo) {
-		// Obter avarias filtradas (usando a mesma lógica da função filtrarAvarias)
-		let avariasFiltradas = this.avarias;
-		const hoje = new Date();
-		
-		// Aplicar os mesmos filtros
-		if (periodo !== 'todos') {
-			let dataFiltro;
-			
-			switch(periodo) {
-				case 'hoje':
-					const hojeStr = hoje.toISOString().split('T')[0];
-					avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === hojeStr);
-					break;
-				case 'ontem':
-					const ontem = new Date(hoje);
-					ontem.setDate(hoje.getDate() - 1);
-					const ontemStr = ontem.toISOString().split('T')[0];
-					avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === ontemStr);
-					break;
-				case 'semana':
-					const inicioSemana = new Date(hoje);
-					inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-					avariasFiltradas = avariasFiltradas.filter(avaria => 
-						new Date(avaria.data) >= inicioSemana
-					);
-					break;
-				case 'mes':
-					const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-					avariasFiltradas = avariasFiltradas.filter(avaria => 
-						new Date(avaria.data) >= inicioMes
-					);
-					break;
-				case 'especifico':
-					const dataEspecifica = document.getElementById('filtroDataEspecificaAvarias').value;
-					if (dataEspecifica) {
-						avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data === dataEspecifica);
-					}
-					break;
-			}
-		}
-
-		if (status !== 'todos') {
-			avariasFiltradas = avariasFiltradas.filter(avaria => avaria.status === status);
-		}
-
-		if (busca) {
-			avariasFiltradas = avariasFiltradas.filter(avaria => 
-				avaria.placa.toLowerCase().includes(busca.toLowerCase()) ||
-				avaria.patrimonio.toLowerCase().includes(busca.toLowerCase()) ||
-				avaria.assinatura.toLowerCase().includes(busca.toLowerCase()) ||
-				avaria.tipoViatura.toLowerCase().includes(busca.toLowerCase()) ||
-				avaria.problemas.some(problema => problema.toLowerCase().includes(busca.toLowerCase()))
-			);
-		}
-
-		// Ordenar por data mais recente
-		avariasFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-		// Gerar tabela HTML
-		let tabelaHTML = `
-			<table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px;">
-				<thead>
-					<tr>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Data</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Viatura</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Placa</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Patrimônio</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Problemas</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Motorista</th>
-						<th style="border: 1px solid #ddd; padding: 8px; background: #f5f5f5; text-align: left;">Status</th>
-					</tr>
-				</thead>
-				<tbody>
-		`;
-
-		avariasFiltradas.forEach(avaria => {
-			const problemasTexto = avaria.problemas.length > 0 ? 
-				avaria.problemas[0] + (avaria.problemas.length > 1 ? ` (+${avaria.problemas.length - 1} mais)` : '') : 
-				'Nenhum problema informado';
-			
-			const problemasTruncado = problemasTexto.length > 100 ? 
-				problemasTexto.substring(0, 97) + '...' : problemasTexto;
-
-			tabelaHTML += `
-				<tr>
-					<td style="border: 1px solid #ddd; padding: 8px;">${new Date(avaria.data).toLocaleDateString('pt-BR')}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;">${avaria.tipoViatura}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;">${avaria.placa}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;">${avaria.patrimonio}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;" title="${problemasTexto}">${problemasTruncado}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;">${avaria.graduacao} ${avaria.assinatura}</td>
-					<td style="border: 1px solid #ddd; padding: 8px;">
-						<span style="background: ${this.getStatusColorAvaria(avaria.status)}; color: white; padding: 3px 6px; border-radius: 3px; font-size: 9px; display: inline-block;">
-							${avaria.status}
-						</span>
-					</td>
-				</tr>
-			`;
-		});
-
-		tabelaHTML += `</tbody></table>`;
-
-		// Conteúdo completo do PDF
-		const htmlContent = `
-			<div style="font-family: Arial, sans-serif; margin: 15px;">
-				<div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3c72; padding-bottom: 10px;">
-					<h1 style="color: #1e3c72; margin: 0; font-size: 24px;">RELATÓRIO DE AVARIAS REPORTADAS</h1>
-					<h2 style="color: #2a5298; margin: 5px 0; font-size: 18px;">Polícia Militar de Pernambuco</h2>
-					<h3 style="color: #666; margin: 5px 0; font-size: 14px;">4° BPM - Batalhão Barreto de Menezes</h3>
-				</div>
-				
-				<div style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #1e3c72;">
-					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px;">
-						<div>
-							<strong>Data do Relatório:</strong> ${new Date().toLocaleDateString('pt-BR')}
-						</div>
-						<div>
-							<strong>Período:</strong> ${periodoTexto}
-						</div>
-						<div>
-							<strong>Status:</strong> ${statusTexto}
-						</div>
-						<div>
-							<strong>Busca:</strong> ${busca || 'Nenhuma'}
-						</div>
-						<div>
-							<strong>Total de Registros:</strong> ${avariasFiltradas.length}
-						</div>
-					</div>
-				</div>
-				
-				<div style="margin-bottom: 15px;">
-					<h3 style="color: #1e3c72; margin-bottom: 10px; font-size: 16px;">RESUMO ESTATÍSTICO</h3>
-					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
-						<div style="background: #e0e7ff; padding: 10px; border-radius: 6px; text-align: center;">
-							<div style="font-size: 12px; color: #666;">Pendentes</div>
-							<div style="font-size: 24px; font-weight: bold; color: #3730a3;">${avariasFiltradas.filter(a => a.status === 'Pendente').length}</div>
-						</div>
-						<div style="background: #fef3c7; padding: 10px; border-radius: 6px; text-align: center;">
-							<div style="font-size: 12px; color: #666;">Em Manutenção</div>
-							<div style="font-size: 24px; font-weight: bold; color: #92400e;">${avariasFiltradas.filter(a => a.status === 'Em Manutenção').length}</div>
-						</div>
-						<div style="background: #d1fae5; padding: 10px; border-radius: 6px; text-align: center;">
-							<div style="font-size: 12px; color: #666;">Resolvidas</div>
-							<div style="font-size: 24px; font-weight: bold; color: #065f46;">${avariasFiltradas.filter(a => a.status === 'Resolvida').length}</div>
-						</div>
-						<div style="background: #e8f5e8; padding: 10px; border-radius: 6px; text-align: center;">
-							<div style="font-size: 12px; color: #666;">Total</div>
-							<div style="font-size: 24px; font-weight: bold; color: #2e7d32;">${avariasFiltradas.length}</div>
-						</div>
-					</div>
-				</div>
-				
-				<h3 style="color: #1e3c72; margin-bottom: 10px; font-size: 16px;">DETALHES DAS AVARIAS</h3>
-				${tabelaHTML}
-				
-				<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #666;">
-					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
-						<div>
-							<strong>Emitido por:</strong> Sistema de Gerenciamento de Frota - PMPE<br>
-							<strong>Versão:</strong> 2.0<br>
-							<strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}
-						</div>
-						<div>
-							<strong>Unidade:</strong> Dinter-I/4° BPM<br>
-							<strong>Local:</strong> Caruaru - PE<br>
-							<strong>Contato:</strong> viaturas4bpm@hotmail.com
-						</div>
-					</div>
-				</div>
-			</div>
-		`;
-
-		// Abrir janela para impressão/PDF
-		const printWindow = window.open('', '_blank');
-		printWindow.document.write(`
-			<!DOCTYPE html>
-			<html>
-				<head>
-					<title>${nomeArquivo}</title>
-					<style>
-						body { 
-							margin: 0; 
-							padding: 0;
-							font-family: Arial, sans-serif;
-							background: white;
-						}
-						@media print {
-							body { margin: 10px; }
-							table { font-size: 8px !important; }
-							th, td { padding: 4px 6px !important; }
-							@page {
-								size: landscape;
-								margin: 10mm;
-							}
-						}
-					</style>
-				</head>
-				<body>
-					${htmlContent}
-					<script>
-						setTimeout(() => {
-							window.print();
-						}, 500);
-					</script>
-				</body>
-			</html>
-		`);
-		printWindow.document.close();
-	}
-
-	// FUNÇÃO: Obter cor do status para PDF
-	getStatusColorAvaria(status) {
-		switch(status) {
-			case 'Pendente':
-				return '#3730a3';
-			case 'Em Análise':
-				return '#92400e';
-			case 'Em Manutenção':
-				return '#92400e';
-			case 'Resolvida':
-				return '#065f46';
-			default:
-				return '#666';
-		}
-	}
-
-    // FUNÇÃO: Carregar página de Saldo de Combustível
-    loadSaldoCombustivelPage(container) {
+    // FUNÇÃO: Limpar usuários excluídos (mantida para compatibilidade)
+    limparUsuariosExcluidos() {
+        // Esta função pode ser removida posteriormente se não for mais necessária
+        console.log('Função limparUsuariosExcluidos chamada (SQLite não precisa)');
+    }
+    
+    // NOVA FUNÇÃO: Carregar página de visualização de avarias para administradores
+    async loadVisualizarAvariasPage(container) {
+        // ADICIONAR: Recarregar dados mais recentes
+        await this.carregarDadosIniciais();
+        
         container.innerHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>⛽ Gerenciamento de Saldo de Combustível</h2>
-                    <div class="info-card">
-                        <p><strong>Informações:</strong> Os saldos são resetados automaticamente para R$ 3.000,00 no primeiro dia de cada mês.</p>
-                        <p>Você pode adicionar saldo extra às viaturas quando necessário.</p>
+                    <h2>⚠️ Visualização de Avarias Reportadas</h2>
+                    
+                    <div class="filtros-container">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="filtroPeriodoAvarias">Período</label>
+                                <select id="filtroPeriodoAvarias">
+                                    <option value="todos">Todos os Registros</option>
+                                    <option value="hoje">Hoje</option>
+                                    <option value="ontem">Ontem</option>
+                                    <option value="semana">Esta Semana</option>
+                                    <option value="mes">Este Mês</option>
+                                    <option value="especifico">Data Específica</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="dataEspecificaAvariasContainer" style="display: none;">
+                                <label for="filtroDataEspecificaAvarias">Data Específica</label>
+                                <input type="date" id="filtroDataEspecificaAvarias">
+                            </div>
+                            <div class="form-group">
+                                <label for="filtroStatusAvaria">Status</label>
+                                <select id="filtroStatusAvaria">
+                                    <option value="todos">Todos os Status</option>
+                                    <option value="PENDENTE">Pendente</option>
+                                    <option value="EM_ANALISE">Em Análise</option>
+                                    <option value="EM_MANUTENCAO">Em Manutenção</option>
+                                    <option value="RESOLVIDA">Resolvida</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" id="filtroBuscaAvarias" placeholder="Buscar por placa, patrimônio ou motorista..." class="search-input">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <button type="button" class="btn-primary" onclick="frotaSystem.filtrarAvarias()">
+                                    <span class="btn-icon">🔍</span>
+                                    Aplicar Filtros
+                                </button>
+                                <button type="button" class="btn-secondary" onclick="frotaSystem.exportarRelatorioAvarias('pdf')">
+                                    <span class="btn-icon">📄</span>
+                                    Exportar PDF
+                                </button>
+                                <button type="button" class="btn-secondary" onclick="frotaSystem.limparFiltrosAvarias()">
+                                    <span class="btn-icon">🔄</span>
+                                    Limpar Filtros
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
+                    <div class="resumo-cards">
+                        <div class="cards-grid">
+                            <div class="card">
+                                <h3>Total de Avarias</h3>
+                                <p class="total-avarias">${this.avarias.length}</p>
+                            </div>
+                            <div class="card">
+                                <h3>Pendentes</h3>
+                                <p class="avarias-pendentes">${this.avarias.filter(a => a.status === 'PENDENTE').length}</p>
+                            </div>
+                            <div class="card">
+                                <h3>Em Manutenção</h3>
+                                <p class="avarias-manutencao">${this.avarias.filter(a => a.status === 'EM_MANUTENCAO').length}</p>
+                            </div>
+                            <div class="card">
+                                <h3>Resolvidas</h3>
+                                <p class="avarias-resolvidas">${this.avarias.filter(a => a.status === 'RESOLVIDA').length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Avarias -->
+                    <div class="table-container-optimized">
+                        <table class="data-table-optimized" id="tabelaAvarias">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Viatura</th>
+                                    <th>Placa</th>
+                                    <th>Patrimônio</th>
+                                    <th>Problemas</th>
+                                    <th>Motorista</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaAvarias">
+                                ${this.gerarListaAvarias()}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para alterar status -->
+            <div id="modalStatusAvaria" class="modal-overlay" style="display: none;">
+                <div class="modal-content" style="max-width: 500px;">
+                    <h2>Alterar Status da Avaria</h2>
+                    <form id="formStatusAvaria">
+                        <input type="hidden" id="avariaIdStatus">
+                        <div class="form-grid">
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="novoStatusAvaria">Novo Status</label>
+                                    <select id="novoStatusAvaria" required>
+                                        <option value="PENDENTE">Pendente</option>
+                                        <option value="EM_ANALISE">Em Análise</option>
+                                        <option value="EM_MANUTENCAO">Em Manutenção</option>
+                                        <option value="RESOLVIDA">Resolvida</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="observacaoStatus">Observação (opcional)</label>
+                                    <textarea id="observacaoStatus" placeholder="Observação sobre a alteração de status..." rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="submit" class="btn-primary">Salvar</button>
+                            <button type="button" class="btn-secondary" onclick="frotaSystem.fecharModalStatus()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        // Configurar eventos dos filtros
+        document.getElementById('filtroPeriodoAvarias').addEventListener('change', (e) => {
+            const dataEspecificaContainer = document.getElementById('dataEspecificaAvariasContainer');
+            if (e.target.value === 'especifico') {
+                dataEspecificaContainer.style.display = 'block';
+            } else {
+                dataEspecificaContainer.style.display = 'none';
+            }
+        });
+
+        // Configurar busca em tempo real
+        document.getElementById('filtroBuscaAvarias').addEventListener('input', (e) => {
+            this.filtrarAvarias();
+        });
+
+        // Configurar formulário de status
+        document.getElementById('formStatusAvaria').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.salvarStatusAvaria();
+        });
+
+        // Configurar tooltips
+        setTimeout(() => {
+            const cells = document.querySelectorAll('.data-table-optimized td');
+            cells.forEach(cell => {
+                if (cell.scrollWidth > cell.clientWidth) {
+                    cell.setAttribute('title', cell.textContent);
+                }
+            });
+        }, 100);
+    }
+    
+    // FUNÇÃO: Gerar lista de avarias
+    gerarListaAvarias(avariasFiltradas = null) {
+        const avarias = avariasFiltradas || this.avarias;
+        
+        if (avarias.length === 0) {
+            return `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2rem; color: #666;">
+                        Nenhuma avaria encontrada para os filtros selecionados
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Ordenar por data mais recente
+        const avariasOrdenadas = [...avarias].sort((a, b) => new Date(b.data_verificacao) - new Date(a.data_verificacao));
+
+        return avariasOrdenadas.map(avaria => {
+            // ADAPTAÇÃO: Converter problemas de JSON para array
+            const problemasArray = typeof avaria.problemas === 'string' ? 
+                JSON.parse(avaria.problemas) : avaria.problemas || [];
+            
+            const primeiroProblema = problemasArray.length > 0 ? problemasArray[0] : 'Nenhum problema informado';
+            const problemasText = primeiroProblema.length > 50 ? 
+                primeiroProblema.substring(0, 47) + '...' : primeiroProblema;
+            
+            const motoristaText = `${avaria.graduacao || ''} ${avaria.assinatura || ''}`;
+
+            return `
+                <tr>
+                    <td title="${new Date(avaria.data_verificacao).toLocaleDateString('pt-BR')}">
+                        ${new Date(avaria.data_verificacao).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td title="${avaria.tipo_viatura}">${avaria.tipo_viatura}</td>
+                    <td>${avaria.placa}</td>
+                    <td>${avaria.patrimonio}</td>
+                    <td title="${primeiroProblema}">${problemasText}</td>
+                    <td title="${motoristaText}">${motoristaText}</td>
+                    <td>
+                        <span class="status-badge-compact ${this.getStatusClassAvaria(avaria.status)}">
+                            ${this.formatarStatusAvaria(avaria.status)}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-action btn-view" onclick="frotaSystem.verDetalhesAvaria('${avaria.id}')" title="Ver detalhes">
+                            👁️
+                        </button>
+                        <button class="btn-action btn-edit" onclick="frotaSystem.abrirModalStatus('${avaria.id}')" title="Alterar status">
+                            ✏️
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // NOVA FUNÇÃO: Formatar status para exibição
+    formatarStatusAvaria(status) {
+        const statusMap = {
+            'PENDENTE': 'Pendente',
+            'EM_ANALISE': 'Em Análise',
+            'EM_MANUTENCAO': 'Em Manutenção',
+            'RESOLVIDA': 'Resolvida'
+        };
+        return statusMap[status] || status;
+    }
+
+    // FUNÇÃO: Obter classe CSS para o status da avaria
+    getStatusClassAvaria(status) {
+        switch(status) {
+            case 'PENDENTE':
+                return 'status-pendente';
+            case 'EM_ANALISE':
+                return 'status-manutencao';
+            case 'EM_MANUTENCAO':
+                return 'status-manutencao';
+            case 'RESOLVIDA':
+                return 'status-ativo';
+            default:
+                return 'status-pendente';
+        }
+    }
+
+    // FUNÇÃO: Filtrar avarias
+    filtrarAvarias() {
+        const periodo = document.getElementById('filtroPeriodoAvarias').value;
+        const status = document.getElementById('filtroStatusAvaria').value;
+        const busca = document.getElementById('filtroBuscaAvarias').value.toLowerCase();
+        const hoje = new Date();
+        
+        let avariasFiltradas = this.avarias;
+
+        // Filtrar por período
+        if (periodo !== 'todos') {
+            let dataFiltro;
+            
+            switch(periodo) {
+                case 'hoje':
+                    const hojeStr = hoje.toISOString().split('T')[0];
+                    avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data_verificacao === hojeStr);
+                    break;
+                case 'ontem':
+                    const ontem = new Date(hoje);
+                    ontem.setDate(hoje.getDate() - 1);
+                    const ontemStr = ontem.toISOString().split('T')[0];
+                    avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data_verificacao === ontemStr);
+                    break;
+                case 'semana':
+                    const inicioSemana = new Date(hoje);
+                    inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+                    avariasFiltradas = avariasFiltradas.filter(avaria => 
+                        new Date(avaria.data_verificacao) >= inicioSemana
+                    );
+                    break;
+                case 'mes':
+                    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    avariasFiltradas = avariasFiltradas.filter(avaria => 
+                        new Date(avaria.data_verificacao) >= inicioMes
+                    );
+                    break;
+                case 'especifico':
+                    const dataEspecifica = document.getElementById('filtroDataEspecificaAvarias').value;
+                    if (dataEspecifica) {
+                        avariasFiltradas = avariasFiltradas.filter(avaria => avaria.data_verificacao === dataEspecifica);
+                    }
+                    break;
+            }
+        }
+
+        // Filtrar por status
+        if (status !== 'todos') {
+            avariasFiltradas = avariasFiltradas.filter(avaria => avaria.status === status);
+        }
+
+        // Filtrar por busca
+        if (busca) {
+            avariasFiltradas = avariasFiltradas.filter(avaria => 
+                avaria.placa.toLowerCase().includes(busca) ||
+                avaria.patrimonio.toLowerCase().includes(busca) ||
+                (avaria.assinatura && avaria.assinatura.toLowerCase().includes(busca)) ||
+                avaria.tipo_viatura.toLowerCase().includes(busca) ||
+                (avaria.problemas && avaria.problemas.toLowerCase().includes(busca))
+            );
+        }
+
+        // Atualizar a tabela
+        document.getElementById('listaAvarias').innerHTML = this.gerarListaAvarias(avariasFiltradas);
+
+        // Atualizar contadores
+        this.atualizarContadoresAvarias(avariasFiltradas);
+
+        // Configurar tooltips novamente
+        setTimeout(() => {
+            const cells = document.querySelectorAll('.data-table-optimized td');
+            cells.forEach(cell => {
+                if (cell.scrollWidth > cell.clientWidth) {
+                    cell.setAttribute('title', cell.textContent);
+                }
+            });
+        }, 100);
+    }
+
+    // FUNÇÃO: Atualizar contadores de avarias
+    atualizarContadoresAvarias(avariasFiltradas = null) {
+        const avarias = avariasFiltradas || this.avarias;
+        
+        document.querySelector('.total-avarias').textContent = avarias.length;
+        document.querySelector('.avarias-pendentes').textContent = avarias.filter(a => a.status === 'PENDENTE').length;
+        document.querySelector('.avarias-manutencao').textContent = avarias.filter(a => a.status === 'EM_MANUTENCAO').length;
+        document.querySelector('.avarias-resolvidas').textContent = avarias.filter(a => a.status === 'RESOLVIDA').length;
+    }
+
+    // FUNÇÃO: Limpar filtros
+    limparFiltrosAvarias() {
+        document.getElementById('filtroPeriodoAvarias').value = 'todos';
+        document.getElementById('filtroStatusAvaria').value = 'todos';
+        document.getElementById('filtroBuscaAvarias').value = '';
+        document.getElementById('dataEspecificaAvariasContainer').style.display = 'none';
+        
+        this.filtrarAvarias();
+    }
+
+    // FUNÇÃO: Abrir modal para alterar status
+    abrirModalStatus(avariaId) {
+        const avaria = this.avarias.find(a => a.id === avariaId);
+        if (!avaria) {
+            alert('Avaria não encontrada!');
+            return;
+        }
+
+        document.getElementById('avariaIdStatus').value = avariaId;
+        document.getElementById('novoStatusAvaria').value = avaria.status;
+        document.getElementById('observacaoStatus').value = '';
+        
+        document.getElementById('modalStatusAvaria').style.display = 'flex';
+    }
+
+    // FUNÇÃO: Fechar modal de status
+    fecharModalStatus() {
+        document.getElementById('modalStatusAvaria').style.display = 'none';
+    }
+
+    // FUNÇÃO: Salvar alteração de status
+    async salvarStatusAvaria() {
+        const avariaId = document.getElementById('avariaIdStatus').value;
+        const novoStatus = document.getElementById('novoStatusAvaria').value;
+        const observacao = document.getElementById('observacaoStatus').value;
+
+        const avariaIndex = this.avarias.findIndex(a => a.id === avariaId);
+        if (avariaIndex === -1) {
+            alert('Avaria não encontrada!');
+            return;
+        }
+
+        try {
+            // Atualizar no SQLite
+            await DataService.updateAvaria(avariaId, {
+                status: novoStatus
+                // ADICIONAR: campo para observações se necessário
+            });
+
+            // Atualizar localmente
+            this.avarias[avariaIndex].status = novoStatus;
+            
+            // Fechar modal e recarregar
+            this.fecharModalStatus();
+            this.filtrarAvarias();
+            
+            alert('Status atualizado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            alert('Erro ao atualizar status. Tente novamente.');
+        }
+    }
+
+    // FUNÇÃO MODIFICADA: Carregar página de Saldo de Combustível
+    async loadSaldoCombustivelPage(container) {
+        // ADICIONAR: Recarregar dados mais recentes
+        await this.carregarDadosIniciais();
+        
+        container.innerHTML = `
+            <div class="page-content fade-in">
+                <div class="form-section">
+                    <h2>⛽ Saldo de Combustível das Viaturas</h2>
                     
                     <div class="table-actions">
                         <input type="text" id="filtroSaldoViaturas" placeholder="Filtrar viaturas..." class="search-input">
@@ -927,7 +747,7 @@ class FrotaSystem {
                                     <th>Patrimônio</th>
                                     <th>Placa</th>
                                     <th>Modelo</th>
-                                    <th>Saldo Atual (R$)</th>
+                                    <th>Saldo (R$)</th>
                                     <th>Status</th>
                                     <th>Ações</th>
                                 </tr>
@@ -938,11 +758,7 @@ class FrotaSystem {
                                         <td>${viatura.patrimonio}</td>
                                         <td>${viatura.placa}</td>
                                         <td>${viatura.modelo}</td>
-                                        <td>
-                                            <span class="saldo-valor ${viatura.saldo < 500 ? 'saldo-baixo' : viatura.saldo < 1000 ? 'saldo-medio' : 'saldo-alto'}">
-                                                R$ ${(viatura.saldo || 0).toFixed(2)}
-                                            </span>
-                                        </td>
+                                        <td>R$ ${viatura.saldo?.toFixed(2) || '0.00'}</td>
                                         <td><span class="status-badge ${viatura.status === 'ATIVA' ? 'status-ativo' : viatura.status === 'MANUTENCAO' ? 'status-manutencao' : 'status-inativo'}">${viatura.status}</span></td>
                                         <td>
                                             <button class="btn-action btn-edit" onclick="frotaSystem.adicionarSaldo('${viatura.patrimonio}')">Adicionar Saldo</button>
@@ -952,24 +768,6 @@ class FrotaSystem {
                                 `).join('')}
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h2>📊 Resumo dos Saldos</h2>
-                    <div class="cards-grid">
-                        <div class="card">
-                            <h3>Total em Saldo</h3>
-                            <p class="saldo-total">R$ ${this.viaturas.reduce((total, v) => total + (v.saldo || 0), 0).toFixed(2)}</p>
-                        </div>
-                        <div class="card">
-                            <h3>Viaturas Ativas</h3>
-                            <p class="viaturas-ativas">${this.viaturas.filter(v => v.status === 'ATIVA').length}</p>
-                        </div>
-                        <div class="card">
-                            <h3>Saldo Médio</h3>
-                            <p class="saldo-medio">R$ ${(this.viaturas.filter(v => v.status === 'ATIVA').reduce((total, v) => total + (v.saldo || 0), 0) / Math.max(this.viaturas.filter(v => v.status === 'ATIVA').length, 1)).toFixed(2)}</p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1008,29 +806,57 @@ class FrotaSystem {
     }
 
     // FUNÇÃO: Adicionar saldo à viatura
-    adicionarSaldo(patrimonio) {
+    async adicionarSaldo(patrimonio) {
         const viatura = this.viaturas.find(v => v.patrimonio === patrimonio);
         if (!viatura) return;
 
         const valor = prompt(`Adicionar saldo para ${viatura.patrimonio} - ${viatura.placa}\nSaldo atual: R$ ${(viatura.saldo || 0).toFixed(2)}\n\nDigite o valor a ser adicionado:`, "0.00");
         
         if (valor && !isNaN(parseFloat(valor)) && parseFloat(valor) > 0) {
-            const valorNumerico = parseFloat(valor);
-            viatura.saldo = (viatura.saldo || 0) + valorNumerico;
-            localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
-            
-            alert(`Saldo de R$ ${valorNumerico.toFixed(2)} adicionado com sucesso!\nNovo saldo: R$ ${viatura.saldo.toFixed(2)}`);
-            
-            // Recarregar a página para atualizar os dados
-            this.loadSaldoCombustivelPage(document.getElementById('contentArea'));
+            try {
+                const valorNumerico = parseFloat(valor);
+                const novoSaldo = (viatura.saldo || 0) + valorNumerico;
+                
+                // Atualizar no SQLite
+                await DataService.updateViatura(viatura.id, {
+                    ...viatura,
+                    saldo: novoSaldo
+                });
+                
+                // Atualizar localmente
+                viatura.saldo = novoSaldo;
+                
+                alert(`Saldo de R$ ${valorNumerico.toFixed(2)} adicionado com sucesso!\nNovo saldo: R$ ${viatura.saldo.toFixed(2)}`);
+                
+                // Recarregar a página para atualizar os dados
+                this.loadSaldoCombustivelPage(document.getElementById('contentArea'));
+            } catch (error) {
+                console.error('Erro ao adicionar saldo:', error);
+                alert('Erro ao adicionar saldo. Tente novamente.');
+            }
         } else if (valor !== null) {
             alert('Valor inválido! Digite um valor numérico positivo.');
         }
     }
 
     // FUNÇÃO: Ver histórico de abastecimentos
-    verHistoricoAbastecimentos(placa) {
-        const abastecimentosViatura = this.abastecimentos.filter(a => a.placa === placa).slice(-10).reverse();
+    async verHistoricoAbastecimentos(placa) {
+        // ADAPTAÇÃO: Buscar abastecimentos específicos da viatura
+        const viatura = this.viaturas.find(v => v.placa === placa);
+        if (!viatura) return;
+
+        let abastecimentosViatura = [];
+        try {
+            // Buscar todos os abastecimentos e filtrar pela viatura
+            const todosAbastecimentos = await DataService.getAbastecimentos();
+            abastecimentosViatura = todosAbastecimentos
+                .filter(a => a.viatura_id === viatura.id)
+                .slice(-10)
+                .reverse();
+        } catch (error) {
+            console.error('Erro ao buscar histórico:', error);
+            abastecimentosViatura = [];
+        }
         
         let historicoHTML = `
             <div class="historico-abastecimentos">
@@ -1054,11 +880,11 @@ class FrotaSystem {
             abastecimentosViatura.forEach(abastecimento => {
                 historicoHTML += `
                     <tr>
-                        <td>${new Date(abastecimento.data).toLocaleDateString('pt-BR')}</td>
+                        <td>${new Date(abastecimento.data_abastecimento).toLocaleDateString('pt-BR')}</td>
                         <td>${abastecimento.combustivel}</td>
                         <td>${abastecimento.litros}L</td>
-                        <td>R$ ${abastecimento.valor}</td>
-                        <td>${abastecimento.km}</td>
+                        <td>R$ ${abastecimento.valor_total}</td>
+                        <td>${abastecimento.km_abastecimento}</td>
                         <td>${abastecimento.posto}</td>
                     </tr>
                 `;
@@ -1114,7 +940,7 @@ class FrotaSystem {
     }
 
     // FUNÇÃO MODIFICADA: Carregar página de Uso de Viatura
-    loadUsoViaturaPage(container) {
+    async loadUsoViaturaPage(container) {
         const user = auth.getCurrentUser();
         
         container.innerHTML = `
@@ -1152,7 +978,7 @@ class FrotaSystem {
                                     <label for="viaturaPatrimonio">Viatura</label>
                                     <select id="viaturaPatrimonio" required>
                                         <option value="">Selecione a viatura...</option>
-                                        ${this.viaturas.filter(v => v.status === 'ATIVA').map(v => `<option value="${v.patrimonio}">${v.patrimonio} - ${v.placa}</option>`).join('')}
+                                        ${this.viaturas.filter(v => v.status === 'ATIVA').map(v => `<option value="${v.id}">${v.patrimonio} - ${v.placa}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -1302,15 +1128,25 @@ class FrotaSystem {
         }
 
         // Carregar registros do usuário logado
-        this.carregarRegistrosUsoUsuario();
+        await this.carregarRegistrosUsoUsuario();
     }
 
     // NOVA FUNÇÃO: Carregar registros apenas do usuário logado
-    carregarRegistrosUsoUsuario() {
+    async carregarRegistrosUsoUsuario() {
         const user = auth.getCurrentUser();
-        const registrosUsuario = this.registrosUso.filter(registro => 
-            registro.motorista.matricula === user.matricula
-        ).slice(-10).reverse(); // Últimos 10 registros
+        
+        // ADAPTAÇÃO: Buscar registros do usuário do SQLite
+        let registrosUsuario = [];
+        try {
+            const todosRegistros = await DataService.getUsoViaturas();
+            registrosUsuario = todosRegistros
+                .filter(registro => registro.motorista_id === user.id)
+                .slice(-10)
+                .reverse();
+        } catch (error) {
+            console.error('Erro ao carregar registros:', error);
+            registrosUsuario = [];
+        }
 
         const tbody = document.getElementById('registrosUsoTable');
         
@@ -1330,30 +1166,30 @@ class FrotaSystem {
         }
 
         tbody.innerHTML = registrosUsuario.map(registro => {
-            const status = registro.dadosFinais.km ? 'FINALIZADO' : 'EM ANDAMENTO';
-            const statusClass = registro.dadosFinais.km ? 'status-finalizada' : 'status-pendente';
+            const status = registro.km_final ? 'FINALIZADO' : 'EM ANDAMENTO';
+            const statusClass = registro.km_final ? 'status-finalizada' : 'status-pendente';
             
             // Verificar se pode editar (dentro de 20 minutos)
             const podeEditar = this.podeEditarRegistro(registro);
             
             let botoes = '';
-            if (!registro.dadosFinais.km) {
+            if (!registro.km_final) {
                 // Registro em andamento - botão Fechar Mapa
-                botoes = `<button class="btn-action btn-edit" onclick="frotaSystem.abrirModalFecharMapa(${registro.id})">Fechar Mapa</button>`;
+                botoes = `<button class="btn-action btn-edit" onclick="frotaSystem.abrirModalFecharMapa('${registro.id}')">Fechar Mapa</button>`;
             } else if (podeEditar) {
                 // Registro finalizado há menos de 20 minutos - botão Editar
-                botoes = `<button class="btn-action btn-edit" onclick="frotaSystem.abrirModalEditarMapa(${registro.id})">Editar</button>`;
+                botoes = `<button class="btn-action btn-edit" onclick="frotaSystem.abrirModalEditarMapa('${registro.id}')">Editar</button>`;
             } else {
                 botoes = '-';
             }
 
             return `
                 <tr>
-                    <td>${new Date(registro.dadosIniciais.data).toLocaleDateString('pt-BR')}</td>
-                    <td>${registro.viatura.patrimonio}</td>
-                    <td>${registro.motorista.nome}</td>
-                    <td>${registro.dadosIniciais.km}</td>
-                    <td>${registro.dadosFinais.km || '-'}</td>
+                    <td>${new Date(registro.data_inicial).toLocaleDateString('pt-BR')}</td>
+                    <td>${registro.viatura?.patrimonio || 'N/A'}</td>
+                    <td>${registro.motorista?.nome_guerra || 'N/A'}</td>
+                    <td>${registro.km_inicial}</td>
+                    <td>${registro.km_final || '-'}</td>
                     <td><span class="status-badge ${statusClass}">${status}</span></td>
                     <td>${botoes}</td>
                 </tr>
@@ -1363,12 +1199,12 @@ class FrotaSystem {
 
     // NOVA FUNÇÃO: Verificar se registro pode ser editado (dentro de 20 minutos)
     podeEditarRegistro(registro) {
-        if (!registro.dadosFinais.km || !registro.timestampFechamento) {
+        if (!registro.km_final || !registro.updated_at) {
             return false;
         }
         
         const agora = new Date();
-        const fechamento = new Date(registro.timestampFechamento);
+        const fechamento = new Date(registro.updated_at);
         const diferencaMinutos = (agora - fechamento) / (1000 * 60);
         
         return diferencaMinutos < 20; // 20 minutos
@@ -1409,9 +1245,9 @@ class FrotaSystem {
         document.getElementById('btnSalvarFecharMapa').textContent = 'Salvar Edição';
         
         // Preencher com dados atuais
-        document.getElementById('fecharDataFinal').value = registro.dadosFinais.data;
-        document.getElementById('fecharHoraFinal').value = registro.dadosFinais.hora;
-        document.getElementById('fecharKmFinal').value = registro.dadosFinais.km;
+        document.getElementById('fecharDataFinal').value = registro.data_final;
+        document.getElementById('fecharHoraFinal').value = registro.hora_final;
+        document.getElementById('fecharKmFinal').value = registro.km_final;
         document.getElementById('fecharObservacoes').value = registro.observacoes || '';
         
         // Mostrar informações de tempo de edição
@@ -1423,10 +1259,10 @@ class FrotaSystem {
 
     // NOVA FUNÇÃO: Atualizar tempo restante para edição
     atualizarTempoRestante(registro) {
-        if (!registro.timestampFechamento) return;
+        if (!registro.updated_at) return;
         
         const agora = new Date();
-        const fechamento = new Date(registro.timestampFechamento);
+        const fechamento = new Date(registro.updated_at);
         const diferencaMinutos = (agora - fechamento) / (1000 * 60);
         const minutosRestantes = Math.max(0, 20 - Math.floor(diferencaMinutos));
         
@@ -1444,8 +1280,8 @@ class FrotaSystem {
     }
 
     // FUNÇÃO CORRIGIDA: Processar fechamento/edição do mapa
-    fecharMapa() {
-        const registroId = parseInt(document.getElementById('fecharMapaRegistroId').value);
+    async fecharMapa() {
+        const registroId = document.getElementById('fecharMapaRegistroId').value;
         const registroIndex = this.registrosUso.findIndex(r => r.id === registroId);
         
         if (registroIndex === -1) {
@@ -1454,106 +1290,119 @@ class FrotaSystem {
         }
 
         const dadosFinais = {
-            data: document.getElementById('fecharDataFinal').value,
-            hora: document.getElementById('fecharHoraFinal').value,
-            km: parseInt(document.getElementById('fecharKmFinal').value)
+            data_final: document.getElementById('fecharDataFinal').value,
+            hora_final: document.getElementById('fecharHoraFinal').value,
+            km_final: parseInt(document.getElementById('fecharKmFinal').value)
         };
 
         const observacoes = document.getElementById('fecharObservacoes').value;
 
         // Validar dados
-        if (!dadosFinais.data || !dadosFinais.hora || !dadosFinais.km) {
+        if (!dadosFinais.data_final || !dadosFinais.hora_final || !dadosFinais.km_final) {
             alert('Por favor, preencha todos os campos obrigatórios!');
             return;
         }
 
         // Validar KM final
-        const kmInicial = this.registrosUso[registroIndex].dadosIniciais.km;
-        if (dadosFinais.km < kmInicial) {
+        const kmInicial = this.registrosUso[registroIndex].km_inicial;
+        if (dadosFinais.km_final < kmInicial) {
             alert('KM final não pode ser menor que KM inicial!');
             return;
         }
 
-        // Atualizar o registro
-        this.registrosUso[registroIndex].dadosFinais = dadosFinais;
-        this.registrosUso[registroIndex].observacoes = observacoes;
-        
-        // Se é um fechamento novo (não edição), registrar timestamp
-        if (!this.registrosUso[registroIndex].timestampFechamento) {
-            this.registrosUso[registroIndex].timestampFechamento = new Date().toISOString();
+        try {
+            // Atualizar no SQLite
+            await DataService.updateUsoViatura(registroId, {
+                ...dadosFinais,
+                observacoes: observacoes,
+                status: 'FINALIZADO',
+                updated_at: new Date().toISOString()
+            });
+
+            // Atualizar localmente
+            this.registrosUso[registroIndex] = {
+                ...this.registrosUso[registroIndex],
+                ...dadosFinais,
+                observacoes: observacoes,
+                status: 'FINALIZADO',
+                updated_at: new Date().toISOString()
+            };
+
+            // Fechar o modal
+            this.fecharModalFecharMapa();
+
+            // Recarregar a lista de registros
+            await this.carregarRegistrosUsoUsuario();
+
+            alert('Mapa fechado com sucesso! O registro foi finalizado.');
+        } catch (error) {
+            console.error('Erro ao fechar mapa:', error);
+            alert('Erro ao fechar mapa. Tente novamente.');
         }
-
-        // Salvar no localStorage
-        localStorage.setItem('pm_registros_uso', JSON.stringify(this.registrosUso));
-
-        // Fechar o modal
-        this.fecharModalFecharMapa();
-
-        // Recarregar a lista de registros
-        this.carregarRegistrosUsoUsuario();
-
-        alert('Mapa fechado com sucesso! O registro foi finalizado.');
     }
 
     // FUNÇÃO MODIFICADA: Registrar uso de viatura
-    registrarUsoViatura() {
+    async registrarUsoViatura() {
         const user = auth.getCurrentUser();
+        const viaturaId = document.getElementById('viaturaPatrimonio').value;
+        const viatura = this.viaturas.find(v => v.id === viaturaId);
         
+        if (!viatura) {
+            alert('Viatura não encontrada!');
+            return;
+        }
+
         const registro = {
-            id: Date.now(),
-            motorista: {
-                grad: document.getElementById('motoristaGrad').value,
-                matricula: document.getElementById('motoristaMatricula').value,
-                cpf: document.getElementById('motoristaCPF').value,
-                nome: document.getElementById('motoristaNome').value
-            },
-            viatura: {
-                patrimonio: document.getElementById('viaturaPatrimonio').value,
-                emprego: document.getElementById('viaturaEmprego').value
-            },
-            dadosIniciais: {
-                data: document.getElementById('dataInicial').value,
-                hora: document.getElementById('horaInicial').value,
-                km: parseInt(document.getElementById('kmInicial').value)
-            },
-            dadosFinais: {
-                data: '',
-                hora: '',
-                km: ''
-            },
+            motorista_id: user.id,
+            viatura_id: viaturaId,
+            emprego_missao: document.getElementById('viaturaEmprego').value,
+            data_inicial: document.getElementById('dataInicial').value,
+            hora_inicial: document.getElementById('horaInicial').value,
+            km_inicial: parseInt(document.getElementById('kmInicial').value),
             observacoes: document.getElementById('observacoes').value,
-            timestamp: new Date().toISOString(),
-            timestampFechamento: null // NOVO CAMPO para controlar tempo de edição
+            status: 'ABERTO'
         };
 
-        this.registrosUso.push(registro);
-        localStorage.setItem('pm_registros_uso', JSON.stringify(this.registrosUso));
-        
-        alert('Uso de viatura registrado com sucesso!');
-        document.getElementById('usoViaturaForm').reset();
-        
-        // Preencher data atual novamente
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('dataInicial').value = today;
-        
-        // Recarregar a página para atualizar o histórico
-        this.carregarRegistrosUsoUsuario();
+        try {
+            // Salvar no SQLite
+            const result = await DataService.createUsoViatura(registro);
+            
+            if (result.success) {
+                // Atualizar localmente
+                registro.id = result.id;
+                this.registrosUso.push(registro);
+                
+                alert('Uso de viatura registrado com sucesso!');
+                document.getElementById('usoViaturaForm').reset();
+                
+                // Preencher data atual novamente
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('dataInicial').value = today;
+                
+                // Recarregar a página para atualizar o histórico
+                await this.carregarRegistrosUsoUsuario();
+            }
+        } catch (error) {
+            console.error('Erro ao registrar uso:', error);
+            alert('Erro ao registrar uso de viatura. Tente novamente.');
+        }
     }
 
-    loadAbastecimentoPage(container) {
+    // FUNÇÃO MODIFICADA: Carregar página de Abastecimento
+    async loadAbastecimentoPage(container) {
         container.innerHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>Registro de Abastecimento</h2>
+                    <h2>⛽ Registro de Abastecimento</h2>
                     <form id="abastecimentoForm">
                         <div class="form-grid">
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="abastecimentoPlaca">Placa da Viatura</label>
+                                    <label for="abastecimentoPlaca">Viatura</label>
                                     <select id="abastecimentoPlaca" required>
                                         <option value="">Selecione a viatura...</option>
-                                        ${this.viaturas.map(v => `<option value="${v.placa}">${v.placa} - ${v.modelo}</option>`).join('')}
-                                </select>
+                                        ${this.viaturas.map(v => `<option value="${v.id}">${v.placa} - ${v.modelo}</option>`).join('')}
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="abastecimentoSaldo">Saldo Disponível</label>
@@ -1563,7 +1412,7 @@ class FrotaSystem {
                             
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="abastecimentoData">Data</label>
+                                    <label for="abastecimentoData">Data do Abastecimento</label>
                                     <input type="date" id="abastecimentoData" required>
                                 </div>
                                 <div class="form-group">
@@ -1571,19 +1420,19 @@ class FrotaSystem {
                                     <input type="time" id="abastecimentoHora" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="abastecimentoKm">KM Atual</label>
-                                    <input type="number" id="abastecimentoKm" required min="0" step="1">
+                                    <label for="abastecimentoKm">KM Atual da Viatura</label>
+                                    <input type="number" id="abastecimentoKm" required min="0" step="1" placeholder="Quilometragem atual">
                                 </div>
                             </div>
                             
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="abastecimentoLitros">Quantidade de Litros</label>
-                                    <input type="number" id="abastecimentoLitros" step="0.01" required min="0" placeholder="0.00">
+                                    <input type="number" id="abastecimentoLitros" step="0.01" required min="0.1" placeholder="Ex: 45.50">
                                 </div>
                                 <div class="form-group">
                                     <label for="abastecimentoValor">Valor Total (R$)</label>
-                                    <input type="number" id="abastecimentoValor" step="0.01" required min="0" placeholder="0.00">
+                                    <input type="number" id="abastecimentoValor" step="0.01" required min="0.01" placeholder="Ex: 250.75">
                                 </div>
                                 <div class="form-group">
                                     <label for="abastecimentoPosto">Posto de Abastecimento</label>
@@ -1595,7 +1444,7 @@ class FrotaSystem {
                                 <div class="form-group">
                                     <label for="abastecimentoCombustivel">Tipo de Combustível</label>
                                     <select id="abastecimentoCombustivel" required>
-                                        <option value="">Selecione...</option>
+                                        <option value="">Selecione o combustível...</option>
                                         <option value="GASOLINA">Gasolina Comum</option>
                                         <option value="GASOLINA_ADITIVADA">Gasolina Aditivada</option>
                                         <option value="ETANOL">Etanol</option>
@@ -1618,7 +1467,7 @@ class FrotaSystem {
                 </div>
                 
                 <div class="form-section">
-                    <h2>Histórico de Abastecimentos</h2>
+                    <h2>📊 Histórico de Abastecimentos</h2>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
@@ -1634,12 +1483,12 @@ class FrotaSystem {
                             <tbody id="historicoAbastecimentos">
                                 ${this.abastecimentos.slice(-10).reverse().map(abastecimento => `
                                     <tr>
-                                        <td>${new Date(abastecimento.data).toLocaleDateString('pt-BR')}</td>
-                                        <td>${abastecimento.placa}</td>
+                                        <td>${new Date(abastecimento.data_abastecimento).toLocaleDateString('pt-BR')}</td>
+                                        <td>${abastecimento.viatura?.placa || 'N/A'}</td>
                                         <td>${abastecimento.combustivel}</td>
                                         <td>${abastecimento.litros}L</td>
-                                        <td>R$ ${abastecimento.valor}</td>
-                                        <td>${abastecimento.km}</td>
+                                        <td>R$ ${abastecimento.valor_total}</td>
+                                        <td>${abastecimento.km_abastecimento}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -1666,17 +1515,19 @@ class FrotaSystem {
         });
     }
 
-    atualizarSaldoViatura(placa) {
-        const viatura = this.viaturas.find(v => v.placa === placa);
+    // FUNÇÃO MODIFICADA: Atualizar saldo da viatura
+    atualizarSaldoViatura(viaturaId) {
+        const viatura = this.viaturas.find(v => v.id === viaturaId);
         const saldoElement = document.getElementById('abastecimentoSaldo');
         if (viatura && saldoElement) {
             saldoElement.value = `R$ ${viatura.saldo?.toFixed(2) || '0.00'}`;
         }
     }
 
-    registrarAbastecimento() {
-        const placa = document.getElementById('abastecimentoPlaca').value;
-        const viatura = this.viaturas.find(v => v.placa === placa);
+    // FUNÇÃO MODIFICADA: Registrar abastecimento
+    async registrarAbastecimento() {
+        const viaturaId = document.getElementById('abastecimentoPlaca').value;
+        const viatura = this.viaturas.find(v => v.id === viaturaId);
         
         if (!viatura) {
             alert('Viatura não encontrada.');
@@ -1691,177 +1542,180 @@ class FrotaSystem {
         }
 
         const abastecimento = {
-            id: Date.now(),
-            placa: placa,
-            data: document.getElementById('abastecimentoData').value,
-            hora: document.getElementById('abastecimentoHora').value,
-            km: document.getElementById('abastecimentoKm').value,
+            viatura_id: viaturaId,
+            data_abastecimento: document.getElementById('abastecimentoData').value,
+            hora_abastecimento: document.getElementById('abastecimentoHora').value,
+            km_abastecimento: document.getElementById('abastecimentoKm').value,
             litros: document.getElementById('abastecimentoLitros').value,
-            valor: valorAbastecimento,
+            valor_total: valorAbastecimento,
             posto: document.getElementById('abastecimentoPosto').value,
-            combustivel: document.getElementById('abastecimentoCombustivel').value,
-            timestamp: new Date().toISOString()
+            combustivel: document.getElementById('abastecimentoCombustivel').value
         };
 
-        // Atualizar saldo da viatura
-        viatura.saldo = (viatura.saldo || 0) - valorAbastecimento;
-        localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
+        try {
+            // Salvar abastecimento no SQLite
+            const result = await DataService.createAbastecimento(abastecimento);
+            
+            if (result.success) {
+                // Atualizar saldo da viatura no SQLite
+                const novoSaldo = (viatura.saldo || 0) - valorAbastecimento;
+                await DataService.updateViatura(viaturaId, {
+                    ...viatura,
+                    saldo: novoSaldo
+                });
 
-        // Salvar abastecimento
-        this.abastecimentos.push(abastecimento);
-        localStorage.setItem('pm_abastecimentos', JSON.stringify(this.abastecimentos));
-        
-        alert('Abastecimento registrado com sucesso!');
-        document.getElementById('abastecimentoForm').reset();
-        
-        // Atualizar saldo exibido
-        this.atualizarSaldoViatura(placa);
-        
-        // Recarregar histórico
-        this.loadAbastecimentoPage(document.getElementById('contentArea'));
+                // Atualizar localmente
+                viatura.saldo = novoSaldo;
+                abastecimento.id = result.id;
+                this.abastecimentos.push(abastecimento);
+
+                alert('Abastecimento registrado com sucesso!');
+                document.getElementById('abastecimentoForm').reset();
+                
+                // Atualizar saldo exibido
+                this.atualizarSaldoViatura(viaturaId);
+                
+                // Recarregar histórico
+                this.loadAbastecimentoPage(document.getElementById('contentArea'));
+            }
+        } catch (error) {
+            console.error('Erro ao registrar abastecimento:', error);
+            alert('Erro ao registrar abastecimento. Tente novamente.');
+        }
     }
 
-	loadAvariaPage(container) {
-		const user = auth.getCurrentUser();
-		
-		container.innerHTML = `
-			<div class="page-content fade-in">
-				<div class="form-section">
-					<h2>Comunicação de Avaria</h2>
-					
-					<div class="comunicado-header">
-						<p><strong>AO:</strong> Chefe da SSTRAN</p>
-						<p><strong>ASSUNTO:</strong> Informação de Viatura</p>
-					</div>
-					
-					<form id="avariaForm">
-						<div class="form-grid">
-							<div class="form-row">
-								<div class="form-group">
-									<label for="avariaData">Data da Verificação</label>
-									<input type="date" id="avariaData" required>
-								</div>
-								<div class="form-group">
-									<label for="avariaTipoViatura">Tipo de Viatura</label>
-									<input type="text" id="avariaTipoViatura" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
-								</div>
-							</div>
+    // FUNÇÃO MODIFICADA: Carregar página de Avaria
+    async loadAvariaPage(container) {
+        const user = auth.getCurrentUser();
+        
+        container.innerHTML = `
+            <div class="page-content fade-in">
+                <div class="form-section">
+                    <h2>🔧 Comunicação de Avaria</h2>
+                    <form id="avariaForm">
+                        <div class="form-grid">
+                            <h3>📅 Dados da Viatura e Ocorrência</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="avariaData">Data da Verificação</label>
+                                    <input type="date" id="avariaData" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="avariaTipoViatura">Tipo de Viatura</label>
+                                    <select id="avariaTipoViatura" required>
+                                        <option value="">Selecione o tipo...</option>
+                                        <option value="SEDAN">Sedan</option>
+                                        <option value="HATCH">Hatch</option>
+                                        <option value="SUV">SUV</option>
+                                        <option value="PICKUP">Pickup</option>
+                                        <option value="MOTO">Moto</option>
+                                        <option value="CAMINHAO">Caminhão</option>
+                                        <option value="ONIBUS">Ônibus</option>
+                                        <option value="BLINDADO">Viatura Blindada</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="avariaPlaca">Placa</label>
+                                    <input type="text" id="avariaPlaca" required placeholder="ABC-1234" class="placa-mask">
+                                </div>
+                                <div class="form-group">
+                                    <label for="avariaPatrimonio">Patrimônio</label>
+                                    <input type="text" id="avariaPatrimonio" required placeholder="Número do patrimônio">
+                                </div>
+                                <div class="form-group">
+                                    <label for="avariaKmAtual">KM Atual da Viatura</label>
+                                    <input type="number" id="avariaKmAtual" required min="0" step="1" placeholder="Quilometragem atual">
+                                </div>
+                            </div>
 
-							<div class="form-row">
-								<div class="form-group">
-									<label for="avariaPlaca">Placa</label>
-									<input type="text" id="avariaPlaca" required placeholder="ABC-1234" class="placa-mask">
-								</div>
-								<div class="form-group">
-									<label for="avariaKmAtual">KM Atual</label>
-									<input type="number" id="avariaKmAtual" required min="0" step="1" placeholder="Quilometragem atual">
-								</div>
-								<div class="form-group">
-									<label for="avariaPatrimonio">Patrimônio</label>
-									<input type="text" id="avariaPatrimonio" required placeholder="Número do patrimônio">
-								</div>
-							</div>
+                            <h3>🔍 Problemas Identificados</h3>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <div class="avaria-list">
+                                        <div class="avaria-item">
+                                            <input type="text" class="avaria-descricao" placeholder="Descreva o problema..." required>
+                                            <button type="button" class="btn-remove-avaria" onclick="frotaSystem.removerAvaria(this)">✕</button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-secondary" onclick="frotaSystem.adicionarAvaria()">
+                                        <span class="btn-icon">+</span>
+                                        Adicionar Outro Problema
+                                    </button>
+                                </div>
+                            </div>
 
-							<div class="form-group">
-								<label>Alterações/Problemas Identificados:</label>
-								<div class="avaria-list">
-									<div class="avaria-item">
-										<input type="text" class="avaria-descricao" placeholder="Descreva o problema..." required>
-										<button type="button" class="btn-remove-avaria" onclick="frotaSystem.removerAvaria(this)">✕</button>
-									</div>
-								</div>
-								<button type="button" class="btn-secondary" onclick="frotaSystem.adicionarAvaria()" style="margin-top: 0.5rem;">
-									+ Adicionar Outro Problema
-								</button>
-							</div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="avariaObservacoes">Observações / Relato do Motorista</label>
+                                    <textarea id="avariaObservacoes" placeholder="Descreva com mais detalhes o que aconteceu, condições da via, etc..." rows="4"></textarea>
+                                </div>
+                            </div>
 
-							<!-- NOVO CAMPO: Observações/Relato do Motorista -->
-							<div class="form-group full-width">
-								<label for="avariaObservacoes">📝 Observações / Relato do Motorista</label>
-								<textarea id="avariaObservacoes" placeholder="Descreva detalhadamente o ocorrido, condições de uso, sintomas observados, ou qualquer informação adicional relevante para a análise da avaria..." rows="4"></textarea>
-								<small style="color: #666; margin-top: 0.25rem; display: block;">
-									Este campo é opcional, mas recomendado para fornecer contexto adicional sobre os problemas identificados.
-								</small>
-							</div>
+                            <h3>👤 Dados do Relator</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="avariaAssinatura">Assinatura</label>
+                                    <input type="text" id="avariaAssinatura" required placeholder="Seu nome de guerra">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">
+                            <span class="btn-icon">⚠️</span>
+                            Enviar Comunicação de Avaria
+                        </button>
+                    </form>
+                </div>
 
-							<div class="assinatura-section">
-								<div class="form-row">
-									<div class="form-group">
-										<label for="avariaAssinatura">Assinatura</label>
-										<input type="text" id="avariaAssinatura" required>
-									</div>
-								</div>
-								
-								<div class="form-row">
-									<div class="form-group">
-										<label for="avariaGrad">Graduação</label>
-										<input type="text" id="avariaGrad" value="${user?.graduacao || ''}" readonly>
-									</div>
-									<div class="form-group">
-										<label for="avariaMatricula">Matrícula</label>
-										<input type="text" id="avariaMatricula" value="${user?.matricula || ''}" readonly>
-									</div>
-									<div class="form-group">
-										<label for="avariaNome">Nome</label>
-										<input type="text" id="avariaNome" value="${user?.nome || ''}" readonly>
-									</div>
-								</div>
-							</div>
-						</div>
-						
-						<button type="submit" class="btn-primary">
-							<span class="btn-icon">📋</span>
-							Enviar Comunicação de Avaria
-						</button>
-					</form>
-				</div>
+                <div class="form-section">
+                    <h2>📋 Histórico de Comunicações</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Viatura</th>
+                                    <th>Problema</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historicoAvarias">
+                                ${this.gerarHistoricoAvariasUsuario(user)}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
 
-				<div class="form-section">
-					<h2>📋 Comunicações de Avaria Recentes</h2>
-					<div class="table-container">
-						<table class="data-table">
-							<thead>
-								<tr>
-									<th>Data</th>
-									<th>Viatura</th>
-									<th>Problemas</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody id="historicoAvarias">
-								${this.gerarHistoricoAvariasUsuario(user)}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		`;
+        // Preencher data atual
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('avariaData').value = today;
 
-		// Preencher data atual
-		const today = new Date().toISOString().split('T')[0];
-		document.getElementById('avariaData').value = today;
+        // Preencher dados do usuário
+        document.getElementById('avariaAssinatura').value = user?.nomeGuerra || user?.nome || '';
 
-		// Preencher dados do usuário
-		document.getElementById('avariaAssinatura').value = user?.nomeGuerra || user?.nome || '';
+        // Configurar formulário
+        document.getElementById('avariaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.registrarAvaria();
+        });
 
-		// Configurar formulário
-		document.getElementById('avariaForm').addEventListener('submit', (e) => {
-			e.preventDefault();
-			this.registrarAvaria();
-		});
-
-		// Configurar máscara de placa
-		const placaInput = document.getElementById('avariaPlaca');
-		if (placaInput) {
-			placaInput.addEventListener('input', function(e) {
-				let value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-				if (value.length > 3) {
-					value = value.substring(0, 3) + '-' + value.substring(3);
-				}
-				e.target.value = value.substring(0, 8);
-			});
-		}
-	}
+        // Configurar máscara de placa
+        const placaInput = document.getElementById('avariaPlaca');
+        if (placaInput) {
+            placaInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                if (value.length > 3) {
+                    value = value.substring(0, 3) + '-' + value.substring(3);
+                }
+                e.target.value = value.substring(0, 8);
+            });
+        }
+    }
 
     adicionarAvaria() {
         const container = document.querySelector('.avaria-list');
@@ -1881,376 +1735,385 @@ class FrotaSystem {
         }
     }
 
-	registrarAvaria() {
-		const problemas = Array.from(document.querySelectorAll('.avaria-descricao'))
-			.map(input => input.value)
-			.filter(valor => valor.trim() !== '');
+    // FUNÇÃO MODIFICADA: Registrar avaria
+    async registrarAvaria() {
+        const problemas = Array.from(document.querySelectorAll('.avaria-descricao'))
+            .map(input => input.value)
+            .filter(valor => valor.trim() !== '');
 
-		if (problemas.length === 0) {
-			alert('Adicione pelo menos um problema.');
-			return;
-		}
+        if (problemas.length === 0) {
+            alert('Adicione pelo menos um problema.');
+            return;
+        }
 
-		// NOVO: Capturar observações
-		const observacoes = document.getElementById('avariaObservacoes').value.trim();
+        // NOVO: Capturar observações
+        const observacoes = document.getElementById('avariaObservacoes').value.trim();
 
-		const avaria = {
-			id: Date.now(),
-			data: document.getElementById('avariaData').value,
-			tipoViatura: document.getElementById('avariaTipoViatura').value,
-			placa: document.getElementById('avariaPlaca').value,
-			kmAtual: document.getElementById('avariaKmAtual').value,
-			patrimonio: document.getElementById('avariaPatrimonio').value,
-			problemas: problemas,
-			observacoes: observacoes, // NOVO CAMPO
-			assinatura: document.getElementById('avariaAssinatura').value,
-			graduacao: document.getElementById('avariaGrad').value,
-			matricula: document.getElementById('avariaMatricula').value,
-			nome: document.getElementById('avariaNome').value,
-			timestamp: new Date().toISOString(),
-			status: 'Pendente' // ← GARANTIR QUE ESTÁ COMO "Pendente"
-		};
+        const user = auth.getCurrentUser();
+        
+        const avaria = {
+            motorista_id: user.id,
+            data_verificacao: document.getElementById('avariaData').value,
+            tipo_viatura: document.getElementById('avariaTipoViatura').value,
+            placa: document.getElementById('avariaPlaca').value,
+            km_atual: document.getElementById('avariaKmAtual').value,
+            patrimonio: document.getElementById('avariaPatrimonio').value,
+            problemas: JSON.stringify(problemas), // Converter array para JSON
+            observacoes: observacoes, // NOVO CAMPO
+            assinatura: document.getElementById('avariaAssinatura').value,
+            status: 'PENDENTE' // ← GARANTIR QUE ESTÁ COMO "PENDENTE"
+        };
 
-		this.avarias.push(avaria);
-		localStorage.setItem('pm_avarias', JSON.stringify(this.avarias));
-		
-		alert('Comunicação de avaria enviada com sucesso!');
-		document.getElementById('avariaForm').reset();
-		
-		// Recarregar a página para atualizar o histórico
-		this.loadAvariaPage(document.getElementById('contentArea'));
-	}
-	
-	// NOVA FUNÇÃO: Ver detalhes completos da avaria
-	// FUNÇÃO MODIFICADA: Ver detalhes completos da avaria em tela cheia
-	verDetalhesAvaria(avariaId) {
-		const avaria = this.avarias.find(a => a.id === avariaId);
-		if (!avaria) {
-			alert('Comunicação de avaria não encontrada!');
-			return;
-		}
+        try {
+            // Salvar no SQLite
+            const result = await DataService.createAvaria(avaria);
+            
+            if (result.success) {
+                // Atualizar localmente
+                avaria.id = result.id;
+                this.avarias.push(avaria);
+                
+                alert('Comunicação de avaria enviada com sucesso!');
+                document.getElementById('avariaForm').reset();
+                
+                // Recarregar a página para atualizar o histórico
+                this.loadAvariaPage(document.getElementById('contentArea'));
+            }
+        } catch (error) {
+            console.error('Erro ao registrar avaria:', error);
+            alert('Erro ao registrar avaria. Tente novamente.');
+        }
+    }
+    
+    // FUNÇÃO MODIFICADA: Ver detalhes completos da avaria em tela cheia
+    verDetalhesAvaria(avariaId) {
+        const avaria = this.avarias.find(a => a.id === avariaId);
+        if (!avaria) {
+            alert('Comunicação de avaria não encontrada!');
+            return;
+        }
 
-		const container = document.getElementById('contentArea');
-		
-		let detalhesHTML = `
-			<div class="page-content fade-in">
-				<div class="form-section">
-					<div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1.5rem;">
-						<h2 style="margin: 0; flex: 1;">📋 Detalhes da Comunicação de Avaria</h2>
-						<button onclick="frotaSystem.loadVisualizarAvariasPage(document.getElementById('contentArea'))" class="btn-secondary">
-							<span class="btn-icon">←</span>
-							Voltar para Lista
-						</button>
-					</div>
-					
-					<div class="cards-grid" style="margin-bottom: 2rem;">
-						<div class="card">
-							<h3>Viatura</h3>
-							<p>${avaria.tipoViatura}</p>
-						</div>
-						<div class="card">
-							<h3>Placa</h3>
-							<p>${avaria.placa}</p>
-						</div>
-						<div class="card">
-							<h3>Patrimônio</h3>
-							<p>${avaria.patrimonio}</p>
-						</div>
-						<div class="card">
-							<h3>Status</h3>
-							<p><span class="status-badge ${this.getStatusClassAvaria(avaria.status)}">${avaria.status}</span></p>
-						</div>
-					</div>
+        const container = document.getElementById('contentArea');
+        
+        // ADAPTAÇÃO: Converter problemas de JSON para array se necessário
+        const problemasArray = typeof avaria.problemas === 'string' ? 
+            JSON.parse(avaria.problemas) : avaria.problemas || [];
+        
+        let detalhesHTML = `
+            <div class="page-content fade-in">
+                <div class="form-section">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0; flex: 1;">📋 Detalhes da Comunicação de Avaria</h2>
+                        <button onclick="frotaSystem.loadVisualizarAvariasPage(document.getElementById('contentArea'))" class="btn-secondary">
+                            <span class="btn-icon">←</span>
+                            Voltar para Lista
+                        </button>
+                    </div>
+                    
+                    <div class="cards-grid" style="margin-bottom: 2rem;">
+                        <div class="card">
+                            <h3>Viatura</h3>
+                            <p>${avaria.tipo_viatura || avaria.tipoViatura}</p>
+                        </div>
+                        <div class="card">
+                            <h3>Placa</h3>
+                            <p>${avaria.placa}</p>
+                        </div>
+                        <div class="card">
+                            <h3>Patrimônio</h3>
+                            <p>${avaria.patrimonio}</p>
+                        </div>
+                        <div class="card">
+                            <h3>Status</h3>
+                            <p><span class="status-badge ${this.getStatusClassAvaria(avaria.status)}">${this.formatarStatusAvaria(avaria.status)}</span></p>
+                        </div>
+                    </div>
 
-					<div class="form-grid">
-						<!-- Seção de Dados da Viatura -->
-						<div class="info-section">
-							<h3>📅 Dados da Viatura e Ocorrência</h3>
-							<div class="form-row">
-								<div class="form-group">
-									<label>Data da Verificação</label>
-									<input type="text" value="${new Date(avaria.data).toLocaleDateString('pt-BR')}" readonly class="readonly-field">
-								</div>
-								<div class="form-group">
-									<label>Quilometragem</label>
-									<input type="text" value="${avaria.kmAtual} km" readonly class="readonly-field">
-								</div>
-								<div class="form-group">
-									<label>Data do Registro</label>
-									<input type="text" value="${new Date(avaria.timestamp).toLocaleString('pt-BR')}" readonly class="readonly-field">
-								</div>
-							</div>
-						</div>
+                    <div class="form-grid">
+                        <!-- Seção de Dados da Viatura e Ocorrência -->
+                        <div class="info-section">
+                            <h3>📅 Dados da Viatura e Ocorrência</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Data da Verificação</label>
+                                    <input type="text" value="${new Date(avaria.data_verificacao || avaria.data).toLocaleDateString('pt-BR')}" readonly class="readonly-field">
+                                </div>
+                                <div class="form-group">
+                                    <label>Quilometragem</label>
+                                    <input type="text" value="${avaria.km_atual || avaria.kmAtual} km" readonly class="readonly-field">
+                                </div>
+                                <div class="form-group">
+                                    <label>Data do Registro</label>
+                                    <input type="text" value="${new Date(avaria.created_at || avaria.timestamp).toLocaleString('pt-BR')}" readonly class="readonly-field">
+                                </div>
+                            </div>
+                        </div>
 
-						<!-- Seção de Problemas -->
-						<div class="info-section">
-							<h3>🔍 Problemas Identificados</h3>
-							<div class="problemas-container">
-								${avaria.problemas.map((problema, index) => `
-									<div class="problema-item">
-										<div class="problema-number">${index + 1}</div>
-										<div class="problema-desc">${problema}</div>
-									</div>
-								`).join('')}
-							</div>
-						</div>
+                        <!-- Seção de Problemas -->
+                        <div class="info-section">
+                            <h3>🔍 Problemas Identificados</h3>
+                            <div class="problemas-container">
+                                ${problemasArray.map((problema, index) => `
+                                    <div class="problema-item">
+                                        <div class="problema-number">${index + 1}</div>
+                                        <div class="problema-desc">${problema}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
 
-						<!-- Seção de Observações (se existir) -->
-						${avaria.observacoes ? `
-						<div class="info-section">
-							<h3>📝 Observações / Relato do Motorista</h3>
-							<div class="observacoes-content-full">
-								<p>${avaria.observacoes}</p>
-							</div>
-						</div>
-						` : ''}
+                        <!-- Seção de Observações (se existir) -->
+                        ${avaria.observacoes ? `
+                        <div class="info-section">
+                            <h3>📝 Observações / Relato do Motorista</h3>
+                            <div class="observacoes-content-full">
+                                <p>${avaria.observacoes}</p>
+                            </div>
+                        </div>
+                        ` : ''}
 
-						<!-- Seção do Relator -->
-						<div class="info-section">
-							<h3>👤 Dados do Relator</h3>
-							<div class="form-row">
-								<div class="form-group">
-									<label>Graduação</label>
-									<input type="text" value="${avaria.graduacao}" readonly class="readonly-field">
-								</div>
-								<div class="form-group">
-									<label>Matrícula</label>
-									<input type="text" value="${avaria.matricula}" readonly class="readonly-field">
-								</div>
-								<div class="form-group">
-									<label>Nome Completo</label>
-									<input type="text" value="${avaria.nome}" readonly class="readonly-field">
-								</div>
-							</div>
-							<div class="form-row">
-								<div class="form-group full-width">
-									<label>Assinatura</label>
-									<input type="text" value="${avaria.assinatura}" readonly class="readonly-field">
-								</div>
-							</div>
-						</div>
+                        <!-- Seção do Relator -->
+                        <div class="info-section">
+                            <h3>👤 Dados do Relator</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Graduação</label>
+                                    <input type="text" value="${avaria.graduacao || ''}" readonly class="readonly-field">
+                                </div>
+                                <div class="form-group">
+                                    <label>Matrícula</label>
+                                    <input type="text" value="${avaria.matricula || ''}" readonly class="readonly-field">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nome Completo</label>
+                                    <input type="text" value="${avaria.nome || ''}" readonly class="readonly-field">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label>Assinatura</label>
+                                    <input type="text" value="${avaria.assinatura}" readonly class="readonly-field">
+                                </div>
+                            </div>
+                        </div>
 
-						<!-- Seção de Histórico (se existir) -->
-						${avaria.historico && avaria.historico.length > 0 ? `
-						<div class="info-section">
-							<h3>📊 Histórico de Alterações</h3>
-							<div class="historico-container">
-								${avaria.historico.map(alteracao => `
-									<div class="historico-item">
-										<div class="historico-header">
-											<strong>${new Date(alteracao.data).toLocaleString('pt-BR')}</strong>
-											<span class="status-badge ${this.getStatusClassAvaria(alteracao.status)}">${alteracao.status}</span>
-										</div>
-										${alteracao.observacao ? `<div class="historico-obs">${alteracao.observacao}</div>` : ''}
-										<div class="historico-user"><small>Por: ${alteracao.usuario}</small></div>
-									</div>
-								`).join('')}
-							</div>
-						</div>
-						` : ''}
+                        <!-- Seção de Histórico (se existir) -->
+                        ${avaria.historico && avaria.historico.length > 0 ? `
+                        <div class="info-section">
+                            <h3>📊 Histórico de Alterações</h3>
+                            <div class="historico-container">
+                                ${avaria.historico.map(alteracao => `
+                                    <div class="historico-item">
+                                        <div class="historico-header">
+                                            <strong>${new Date(alteracao.data).toLocaleString('pt-BR')}</strong>
+                                            <span class="status-badge ${this.getStatusClassAvaria(alteracao.status)}">${this.formatarStatusAvaria(alteracao.status)}</span>
+                                        </div>
+                                        ${alteracao.observacao ? `<div class="historico-obs">${alteracao.observacao}</div>` : ''}
+                                        <div class="historico-user"><small>Por: ${alteracao.usuario}</small></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
 
-						<!-- Botões de Ação -->
-						<div class="form-row">
-							<div class="form-group full-width" style="text-align: center; margin-top: 2rem;">
-								<button onclick="frotaSystem.abrirModalStatus(${avaria.id})" class="btn-primary" style="margin-right: 1rem;">
-									<span class="btn-icon">✏️</span>
-									Alterar Status
-								</button>
-								<button onclick="frotaSystem.exportarDetalhesAvariaPDF(${avaria.id})" class="btn-secondary">
-									<span class="btn-icon">📄</span>
-									Exportar para PDF
-								</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		`;
+                        <!-- Botões de Ação -->
+                        <div class="form-row">
+                            <div class="form-group full-width" style="text-align: center; margin-top: 2rem;">
+                                <button onclick="frotaSystem.abrirModalStatus('${avaria.id}')" class="btn-primary" style="margin-right: 1rem;">
+                                    <span class="btn-icon">✏️</span>
+                                    Alterar Status
+                                </button>
+                                <button onclick="frotaSystem.exportarDetalhesAvariaPDF('${avaria.id}')" class="btn-secondary">
+                                    <span class="btn-icon">📄</span>
+                                    Exportar para PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
 
-		container.innerHTML = detalhesHTML;
-	}
-	
-	// FUNÇÃO: Exportar detalhes específicos de uma avaria para PDF
-	exportarDetalhesAvariaPDF(avariaId) {
-		const avaria = this.avarias.find(a => a.id === avariaId);
-		if (!avaria) {
-			alert('Avaria não encontrada!');
-			return;
-		}
+        container.innerHTML = detalhesHTML;
+    }
+    
+    // FUNÇÃO: Exportar detalhes específicos de uma avaria para PDF
+    exportarDetalhesAvariaPDF(avariaId) {
+        const avaria = this.avarias.find(a => a.id === avariaId);
+        if (!avaria) {
+            alert('Avaria não encontrada!');
+            return;
+        }
 
-		const nomeArquivo = `Detalhes_Avaria_${avaria.placa}_${avaria.data}`;
-		
-		const htmlContent = `
-			<div style="font-family: Arial, sans-serif; margin: 20px;">
-				<div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3c72; padding-bottom: 10px;">
-					<h1 style="color: #1e3c72; margin: 0; font-size: 24px;">DETALHES DA COMUNICAÇÃO DE AVARIA</h1>
-					<h2 style="color: #2a5298; margin: 5px 0; font-size: 18px;">Polícia Militar de Pernambuco</h2>
-				</div>
-				
-				${this.gerarConteudoDetalhesAvariaPDF(avaria)}
-			</div>
-		`;
+        const nomeArquivo = `Detalhes_Avaria_${avaria.placa}_${avaria.data_verificacao || avaria.data}`;
+        
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; margin: 20px;">
+                <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3c72; padding-bottom: 10px;">
+                    <h1 style="color: #1e3c72; margin: 0; font-size: 24px;">DETALHES DA COMUNICAÇÃO DE AVARIA</h1>
+                    <h2 style="color: #2a5298; margin: 5px 0; font-size: 18px;">Polícia Militar de Pernambuco</h2>
+                </div>
+                
+                ${this.gerarConteudoDetalhesAvariaPDF(avaria)}
+            </div>
+        `;
 
-		const printWindow = window.open('', '_blank');
-		printWindow.document.write(`
-			<!DOCTYPE html>
-			<html>
-				<head>
-					<title>${nomeArquivo}</title>
-					<style>
-						body { margin: 20px; font-family: Arial, sans-serif; }
-						.section { margin-bottom: 20px; }
-						.section h3 { color: #1e3c72; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-						.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
-						.info-item { margin-bottom: 8px; }
-						.info-label { font-weight: bold; color: #666; }
-						.problema-item { margin: 5px 0; padding-left: 15px; }
-						.observacoes { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
-					</style>
-				</head>
-				<body>
-					${htmlContent}
-					<script>
-						setTimeout(() => {
-							window.print();
-						}, 500);
-					</script>
-				</body>
-			</html>
-		`);
-		printWindow.document.close();
-	}
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>${nomeArquivo}</title>
+                    <style>
+                        body { margin: 20px; font-family: Arial, sans-serif; }
+                        .section { margin-bottom: 20px; }
+                        .section h3 { color: #1e3c72; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+                        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+                        .info-item { margin-bottom: 8px; }
+                        .info-label { font-weight: bold; color: #666; }
+                        .problema-item { margin: 5px 0; padding-left: 15px; }
+                        .observacoes { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    ${htmlContent}
+                    <script>
+                        setTimeout(() => {
+                            window.print();
+                        }, 500);
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
 
-	// FUNÇÃO AUXILIAR: Gerar conteúdo dos detalhes para PDF
-	gerarConteudoDetalhesAvariaPDF(avaria) {
-		return `
-			<div class="section">
-				<h3>Dados da Viatura</h3>
-				<div class="info-grid">
-					<div class="info-item">
-						<span class="info-label">Data:</span> ${new Date(avaria.data).toLocaleDateString('pt-BR')}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Viatura:</span> ${avaria.tipoViatura}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Placa:</span> ${avaria.placa}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Patrimônio:</span> ${avaria.patrimonio}
-					</div>
-					<div class="info-item">
-						<span class="info-label">KM:</span> ${avaria.kmAtual}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Status:</span> ${avaria.status}
-					</div>
-				</div>
-			</div>
+    // FUNÇÃO AUXILIAR: Gerar conteúdo dos detalhes para PDF
+    gerarConteudoDetalhesAvariaPDF(avaria) {
+        // ADAPTAÇÃO: Converter problemas de JSON para array se necessário
+        const problemasArray = typeof avaria.problemas === 'string' ? 
+            JSON.parse(avaria.problemas) : avaria.problemas || [];
+            
+        return `
+            <div class="section">
+                <h3>Dados da Viatura</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Data:</span> ${new Date(avaria.data_verificacao || avaria.data).toLocaleDateString('pt-BR')}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Viatura:</span> ${avaria.tipo_viatura || avaria.tipoViatura}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Placa:</span> ${avaria.placa}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Patrimônio:</span> ${avaria.patrimonio}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">KM:</span> ${avaria.km_atual || avaria.kmAtual}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span> ${this.formatarStatusAvaria(avaria.status)}
+                    </div>
+                </div>
+            </div>
 
-			<div class="section">
-				<h3>Problemas Identificados</h3>
-				${avaria.problemas.map((problema, index) => `
-					<div class="problema-item">${index + 1}. ${problema}</div>
-				`).join('')}
-			</div>
+            <div class="section">
+                <h3>Problemas Identificados</h3>
+                ${problemasArray.map((problema, index) => `
+                    <div class="problema-item">${index + 1}. ${problema}</div>
+                `).join('')}
+            </div>
 
-			${avaria.observacoes ? `
-			<div class="section">
-				<h3>Observações do Motorista</h3>
-				<div class="observacoes">${avaria.observacoes}</div>
-			</div>
-			` : ''}
+            ${avaria.observacoes ? `
+            <div class="section">
+                <h3>Observações do Motorista</h3>
+                <div class="observacoes">${avaria.observacoes}</div>
+            </div>
+            ` : ''}
 
-			<div class="section">
-				<h3>Dados do Relator</h3>
-				<div class="info-grid">
-					<div class="info-item">
-						<span class="info-label">Graduação:</span> ${avaria.graduacao}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Matrícula:</span> ${avaria.matricula}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Nome:</span> ${avaria.nome}
-					</div>
-					<div class="info-item">
-						<span class="info-label">Assinatura:</span> ${avaria.assinatura}
-					</div>
-				</div>
-			</div>
+            <div class="section">
+                <h3>Dados do Relator</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Graduação:</span> ${avaria.graduacao || ''}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Matrícula:</span> ${avaria.matricula || ''}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Nome:</span> ${avaria.nome || ''}
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Assinatura:</span> ${avaria.assinatura}
+                    </div>
+                </div>
+            </div>
 
-			<div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #666;">
-				<strong>Emitido em:</strong> ${new Date().toLocaleString('pt-BR')} | 
-				<strong>Por:</strong> Sistema de Gerenciamento de Frota - PMPE
-			</div>
-		`;
-	}
-	
-	// NOVA FUNÇÃO: Gerar histórico de avarias do usuário logado com status real
-	gerarHistoricoAvariasUsuario(user) {
-		if (!user) return '';
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #666;">
+                <strong>Emitido em:</strong> ${new Date().toLocaleString('pt-BR')} | 
+                <strong>Por:</strong> Sistema de Gerenciamento de Frota - PMPE
+            </div>
+        `;
+    }
+    
+    // NOVA FUNÇÃO: Gerar histórico de avarias do usuário logado com status real
+    gerarHistoricoAvariasUsuario(user) {
+        if (!user) return '';
 
-		// Filtrar avarias do usuário logado
-		const avariasUsuario = this.avarias
-			.filter(avaria => avaria.matricula === user.matricula)
-			.slice(-5) // Últimas 5 avarias
-			.reverse(); // Mais recentes primeiro
+        // ADAPTAÇÃO: Filtrar avarias do usuário logado
+        const avariasUsuario = this.avarias
+            .filter(avaria => avaria.motorista_id === user.id)
+            .slice(-5) // Últimas 5 avarias
+            .reverse(); // Mais recentes primeiro
 
-		if (avariasUsuario.length === 0) {
-			return `
-				<tr>
-					<td colspan="4" style="text-align: center; padding: 2rem;">
-						<div style="color: #6c757d;">
-							<span style="font-size: 3rem;">⚠️</span>
-							<p>Nenhuma comunicação de avaria</p>
-							<small>As comunicações aparecerão aqui</small>
-						</div>
-					</td>
-				</tr>
-			`;
-		}
+        if (avariasUsuario.length === 0) {
+            return `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">
+                        <div style="color: #6c757d;">
+                            <span style="font-size: 3rem;">⚠️</span>
+                            <p>Nenhuma comunicação de avaria</p>
+                            <small>As comunicações aparecerão aqui</small>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
 
-		return avariasUsuario.map(avaria => {
-			const primeiroProblema = avaria.problemas.length > 0 ? 
-				avaria.problemas[0].substring(0, 50) + (avaria.problemas[0].length > 50 ? '...' : '') : 
-				'Nenhum';
-			
-			// USAR O STATUS REAL DA AVARIA
-			const statusClass = this.getStatusClassAvaria(avaria.status);
-			
-			return `
-				<tr>
-					<td>${new Date(avaria.data).toLocaleDateString('pt-BR')}</td>
-					<td>${avaria.placa}</td>
-					<td title="${avaria.problemas.length > 0 ? avaria.problemas[0] : 'Nenhum'}">${primeiroProblema}</td>
-					<td><span class="status-badge ${statusClass}">${avaria.status}</span></td>
-				</tr>
-			`;
-		}).join('');
-	}
-	
-	// FUNÇÃO: Obter classe CSS para o status da avaria
-	getStatusClassAvaria(status) {
-		switch(status) {
-			case 'Pendente':
-				return 'status-pendente';
-			case 'Em Análise':
-				return 'status-manutencao';
-			case 'Em Manutenção':
-				return 'status-manutencao';
-			case 'Resolvida':
-				return 'status-ativo';
-			default:
-				return 'status-pendente';
-		}
-	}
+        return avariasUsuario.map(avaria => {
+            // ADAPTAÇÃO: Converter problemas de JSON para array se necessário
+            const problemasArray = typeof avaria.problemas === 'string' ? 
+                JSON.parse(avaria.problemas) : avaria.problemas || [];
+            
+            const primeiroProblema = problemasArray.length > 0 ? 
+                problemasArray[0].substring(0, 50) + (problemasArray[0].length > 50 ? '...' : '') : 
+                'Nenhum';
+            
+            // USAR O STATUS REAL DA AVARIA
+            const statusClass = this.getStatusClassAvaria(avaria.status);
+            
+            return `
+                <tr>
+                    <td>${new Date(avaria.data_verificacao || avaria.data).toLocaleDateString('pt-BR')}</td>
+                    <td>${avaria.placa}</td>
+                    <td title="${problemasArray.length > 0 ? problemasArray[0] : 'Nenhum'}">${primeiroProblema}</td>
+                    <td><span class="status-badge ${statusClass}">${this.formatarStatusAvaria(avaria.status)}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
 
-    loadCadastroMotoristaPage(container) {
+    // FUNÇÃO MODIFICADA: Carregar página de Cadastro de Motorista
+    async loadCadastroMotoristaPage(container) {
+        // ADICIONAR: Recarregar dados mais recentes
+        await this.carregarDadosIniciais();
+        
         container.innerHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>Cadastro de Motorista</h2>
+                    <h2>👤 Cadastro de Motorista</h2>
                     <form id="cadastroMotoristaForm">
                         <div class="form-grid">
                             <div class="form-row">
@@ -2354,7 +2217,7 @@ class FrotaSystem {
                 </div>
 
                 <div class="form-section">
-                    <h2>Motoristas Cadastrados</h2>
+                    <h2>📋 Motoristas Cadastrados</h2>
                     <div class="table-actions">
                         <input type="text" id="filtroMotoristas" placeholder="Filtrar motoristas..." class="search-input">
                     </div>
@@ -2374,15 +2237,15 @@ class FrotaSystem {
                             <tbody id="listaMotoristas">
                                 ${this.motoristas.map(motorista => `
                                     <tr>
-                                        <td>${motorista.nomeGuerra}</td>
+                                        <td>${motorista.nome_guerra || motorista.nomeGuerra}</td>
                                         <td>${motorista.graduacao}</td>
                                         <td>${motorista.matricula}</td>
-                                        <td>${motorista.codigoCondutor}</td>
-                                        <td><span class="status-badge ${motorista.isAdmin ? 'status-admin' : 'status-motorista'}">${motorista.isAdmin ? 'Administrador' : 'Motorista'}</span></td>
+                                        <td>${motorista.codigo_condutor || motorista.codigoCondutor}</td>
+                                        <td><span class="status-badge ${motorista.is_admin || motorista.isAdmin ? 'status-admin' : 'status-motorista'}">${motorista.is_admin || motorista.isAdmin ? 'Administrador' : 'Motorista'}</span></td>
                                         <td><span class="status-badge ${motorista.status === 'ATIVO' ? 'status-ativo' : 'status-inativo'}">${motorista.status}</span></td>
                                         <td>
-                                            <button class="btn-action btn-edit" onclick="frotaSystem.editarMotorista(${motorista.id})">Editar</button>
-                                            <button class="btn-action btn-delete" onclick="frotaSystem.excluirMotorista(${motorista.id})">Excluir</button>
+                                            <button class="btn-action btn-edit" onclick="frotaSystem.editarMotorista('${motorista.id}')">Editar</button>
+                                            <button class="btn-action btn-delete" onclick="frotaSystem.excluirMotorista('${motorista.id}')">Excluir</button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -2450,20 +2313,21 @@ class FrotaSystem {
         }
     }
 
-    registrarMotorista() {
+    // FUNÇÃO MODIFICADA: Registrar motorista
+    async registrarMotorista() {
         const formData = {
-            nomeCompleto: document.getElementById('motoristaNomeCompleto').value,
-            nomeGuerra: document.getElementById('motoristaNomeGuerra').value,
+            nome_completo: document.getElementById('motoristaNomeCompleto').value,
+            nome_guerra: document.getElementById('motoristaNomeGuerra').value,
             graduacao: document.getElementById('motoristaGraduacao').value,
             matricula: document.getElementById('motoristaMatricula').value,
-            codigoCondutor: document.getElementById('motoristaCodigoCondutor').value,
+            codigo_condutor: document.getElementById('motoristaCodigoCondutor').value,
             cpf: document.getElementById('motoristaCPF').value,
             telefone: document.getElementById('motoristaTelefone').value,
             email: document.getElementById('motoristaEmail').value,
             senha: document.getElementById('motoristaSenha').value,
             confirmarSenha: document.getElementById('motoristaConfirmarSenha').value,
             status: document.getElementById('motoristaStatus').value,
-            isAdmin: document.getElementById('motoristaIsAdmin').value === 'true'
+            is_admin: document.getElementById('motoristaIsAdmin').value === 'true'
         };
 
         // Validações
@@ -2477,50 +2341,39 @@ class FrotaSystem {
             return;
         }
 
-        // Verificar se a matrícula já existe no sistema de autenticação
-        const usuarioExistente = auth.users.find(u => u.matricula === formData.matricula);
-        if (usuarioExistente) {
-            this.mostrarMensagem('cadastroMotoristaError', 'Matrícula já cadastrada no sistema.');
-            return;
-        }
+        try {
+            // Verificar se a matrícula já existe
+            const motoristasExistentes = await DataService.getMotoristas();
+            const matriculaExistente = motoristasExistentes.find(m => m.matricula === formData.matricula);
+            if (matriculaExistente) {
+                this.mostrarMensagem('cadastroMotoristaError', 'Matrícula já cadastrada no sistema.');
+                return;
+            }
 
-        // Verificar se o CPF já existe no sistema de autenticação
-        const cpfExistente = auth.users.find(u => u.cpf === formData.cpf);
-        if (cpfExistente) {
-            this.mostrarMensagem('cadastroMotoristaError', 'CPF já cadastrado no sistema.');
-            return;
-        }
+            // Verificar se o CPF já existe
+            const cpfExistente = motoristasExistentes.find(m => m.cpf === formData.cpf);
+            if (cpfExistente) {
+                this.mostrarMensagem('cadastroMotoristaError', 'CPF já cadastrado no sistema.');
+                return;
+            }
 
-        // Registrar no sistema de autenticação
-        const resultado = auth.registerUser({
-            nome: formData.nomeCompleto,
-            nomeGuerra: formData.nomeGuerra,
-            graduacao: formData.graduacao,
-            matricula: formData.matricula,
-            codigoCondutor: formData.codigoCondutor,
-            cpf: formData.cpf,
-            telefone: formData.telefone,
-            email: formData.email,
-            senha: formData.senha,
-            isAdmin: formData.isAdmin
-        });
-
-        if (resultado.success) {
-            // Também salvar na lista de motoristas do sistema de frota
-            const motorista = {
-                id: resultado.user.id,
-                ...formData
-            };
-            this.motoristas.push(motorista);
-            localStorage.setItem('pm_motoristas', JSON.stringify(this.motoristas));
-
-            this.mostrarMensagem('cadastroMotoristaSuccess', 'Motorista cadastrado com sucesso!');
-            document.getElementById('cadastroMotoristaForm').reset();
+            // Salvar no SQLite
+            const result = await DataService.createMotorista(formData);
             
-            // Recarregar a lista
-            this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
-        } else {
-            this.mostrarMensagem('cadastroMotoristaError', resultado.message);
+            if (result.success) {
+                // Atualizar localmente
+                formData.id = result.id;
+                this.motoristas.push(formData);
+
+                this.mostrarMensagem('cadastroMotoristaSuccess', 'Motorista cadastrado com sucesso!');
+                document.getElementById('cadastroMotoristaForm').reset();
+                
+                // Recarregar a lista
+                await this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
+            }
+        } catch (error) {
+            console.error('Erro ao cadastrar motorista:', error);
+            this.mostrarMensagem('cadastroMotoristaError', 'Erro ao cadastrar motorista. Tente novamente.');
         }
     }
 
@@ -2543,7 +2396,8 @@ class FrotaSystem {
         });
     }
 
-    editarMotorista(id) {
+    // FUNÇÃO MODIFICADA: Editar motorista
+    async editarMotorista(id) {
         const motorista = this.motoristas.find(m => m.id === id);
         if (!motorista) {
             alert('Motorista não encontrado!');
@@ -2554,17 +2408,17 @@ class FrotaSystem {
         const formHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>✏️ Editar Motorista - ${motorista.nomeGuerra}</h2>
+                    <h2>✏️ Editar Motorista - ${motorista.nome_guerra || motorista.nomeGuerra}</h2>
                     <form id="editarMotoristaForm">
                         <div class="form-grid">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="editarNomeCompleto">Nome Completo</label>
-                                    <input type="text" id="editarNomeCompleto" value="${motorista.nomeCompleto}" required placeholder="Digite o nome completo">
+                                    <input type="text" id="editarNomeCompleto" value="${motorista.nome_completo || motorista.nomeCompleto}" required placeholder="Digite o nome completo">
                                 </div>
                                 <div class="form-group">
                                     <label for="editarNomeGuerra">Nome de Guerra</label>
-                                    <input type="text" id="editarNomeGuerra" value="${motorista.nomeGuerra}" required placeholder="Nome de guerra">
+                                    <input type="text" id="editarNomeGuerra" value="${motorista.nome_guerra || motorista.nomeGuerra}" required placeholder="Nome de guerra">
                                 </div>
                             </div>
 
@@ -2597,7 +2451,7 @@ class FrotaSystem {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="editarCodigoCondutor">Código do Condutor</label>
-                                    <input type="text" id="editarCodigoCondutor" value="${motorista.codigoCondutor}" required placeholder="Código do condutor">
+                                    <input type="text" id="editarCodigoCondutor" value="${motorista.codigo_condutor || motorista.codigoCondutor}" required placeholder="Código do condutor">
                                 </div>
                                 <div class="form-group">
                                     <label for="editarCPF">CPF</label>
@@ -2629,8 +2483,8 @@ class FrotaSystem {
                                 <div class="form-group">
                                     <label for="editarIsAdmin">Tipo de Acesso</label>
                                     <select id="editarIsAdmin" required>
-                                        <option value="false" ${!motorista.isAdmin ? 'selected' : ''}>Motorista</option>
-                                        <option value="true" ${motorista.isAdmin ? 'selected' : ''}>Administrador</option>
+                                        <option value="false" ${!motorista.is_admin && !motorista.isAdmin ? 'selected' : ''}>Motorista</option>
+                                        <option value="true" ${motorista.is_admin || motorista.isAdmin ? 'selected' : ''}>Administrador</option>
                                     </select>
                                 </div>
                             </div>
@@ -2727,7 +2581,8 @@ class FrotaSystem {
         }
     }
 
-    salvarEdicaoMotorista(id) {
+    // FUNÇÃO MODIFICADA: Salvar edição do motorista
+    async salvarEdicaoMotorista(id) {
         const motoristaIndex = this.motoristas.findIndex(m => m.id === id);
         if (motoristaIndex === -1) {
             this.mostrarMensagem('editarMotoristaError', 'Motorista não encontrado!');
@@ -2735,18 +2590,18 @@ class FrotaSystem {
         }
 
         const formData = {
-            nomeCompleto: document.getElementById('editarNomeCompleto').value,
-            nomeGuerra: document.getElementById('editarNomeGuerra').value,
+            nome_completo: document.getElementById('editarNomeCompleto').value,
+            nome_guerra: document.getElementById('editarNomeGuerra').value,
             graduacao: document.getElementById('editarGraduacao').value,
             matricula: document.getElementById('editarMatricula').value,
-            codigoCondutor: document.getElementById('editarCodigoCondutor').value,
+            codigo_condutor: document.getElementById('editarCodigoCondutor').value,
             cpf: document.getElementById('editarCPF').value,
             telefone: document.getElementById('editarTelefone').value,
             email: document.getElementById('editarEmail').value,
             novaSenha: document.getElementById('editarSenha').value,
             confirmarSenha: document.getElementById('editarConfirmarSenha').value,
             status: document.getElementById('editarStatus').value,
-            isAdmin: document.getElementById('editarIsAdmin').value === 'true'
+            is_admin: document.getElementById('editarIsAdmin').value === 'true'
         };
 
         // Validações
@@ -2760,95 +2615,81 @@ class FrotaSystem {
             return;
         }
 
-        // Verificar se o CPF já existe em outro motorista
-        const cpfExistente = this.motoristas.find(m => m.cpf === formData.cpf && m.id !== id);
-        if (cpfExistente) {
-            this.mostrarMensagem('editarMotoristaError', 'CPF já cadastrado em outro motorista.');
-            return;
-        }
-
-        // Atualizar no sistema de autenticação
-        const resultadoAuth = auth.updateUser(id, {
-            nome: formData.nomeCompleto,
-            nomeGuerra: formData.nomeGuerra,
-            graduacao: formData.graduacao,
-            codigoCondutor: formData.codigoCondutor,
-            cpf: formData.cpf,
-            telefone: formData.telefone,
-            email: formData.email,
-            isAdmin: formData.isAdmin,
-            ativo: formData.status === 'ATIVO'
-        });
-
-        if (!resultadoAuth.success) {
-            this.mostrarMensagem('editarMotoristaError', resultadoAuth.message);
-            return;
-        }
-
-        // Atualizar senha se fornecida
-        if (formData.novaSenha) {
-            const resultadoSenha = auth.changePassword(id, this.motoristas[motoristaIndex].senha, formData.novaSenha);
-            if (!resultadoSenha.success) {
-                this.mostrarMensagem('editarMotoristaError', resultadoSenha.message);
+        try {
+            // Verificar se o CPF já existe em outro motorista
+            const motoristasExistentes = await DataService.getMotoristas();
+            const cpfExistente = motoristasExistentes.find(m => m.cpf === formData.cpf && m.id !== id);
+            if (cpfExistente) {
+                this.mostrarMensagem('editarMotoristaError', 'CPF já cadastrado em outro motorista.');
                 return;
             }
+
+            // Preparar dados para atualização
+            const dadosAtualizacao = {
+                nome_completo: formData.nome_completo,
+                nome_guerra: formData.nome_guerra,
+                graduacao: formData.graduacao,
+                codigo_condutor: formData.codigo_condutor,
+                cpf: formData.cpf,
+                telefone: formData.telefone,
+                email: formData.email,
+                status: formData.status,
+                is_admin: formData.is_admin
+            };
+
+            // Adicionar senha se fornecida
+            if (formData.novaSenha) {
+                dadosAtualizacao.senha = formData.novaSenha;
+            }
+
+            // Atualizar no SQLite
+            await DataService.updateMotorista(id, dadosAtualizacao);
+
+            // Atualizar localmente
+            this.motoristas[motoristaIndex] = {
+                ...this.motoristas[motoristaIndex],
+                ...dadosAtualizacao
+            };
+            
+            this.mostrarMensagem('editarMotoristaSuccess', 'Motorista atualizado com sucesso!');
+            
+            // Voltar para a lista após 2 segundos
+            setTimeout(() => {
+                this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
+            }, 2000);
+        } catch (error) {
+            console.error('Erro ao atualizar motorista:', error);
+            this.mostrarMensagem('editarMotoristaError', 'Erro ao atualizar motorista. Tente novamente.');
         }
-
-        // Atualizar na lista de motoristas do sistema de frota
-        this.motoristas[motoristaIndex] = {
-            ...this.motoristas[motoristaIndex],
-            ...formData
-        };
-
-        // Atualizar senha se foi alterada
-        if (formData.novaSenha) {
-            this.motoristas[motoristaIndex].senha = formData.novaSenha;
-        }
-
-        localStorage.setItem('pm_motoristas', JSON.stringify(this.motoristas));
-        
-        this.mostrarMensagem('editarMotoristaSuccess', 'Motorista atualizado com sucesso!');
-        
-        // Voltar para a lista após 2 segundos
-        setTimeout(() => {
-            this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
-        }, 2000);
     }
 
-    excluirMotorista(id) {
+    // FUNÇÃO MODIFICADA: Excluir motorista
+    async excluirMotorista(id) {
         if (confirm('Tem certeza que deseja excluir este motorista?')) {
-            // Encontrar o motorista antes de excluir
-            const motorista = this.motoristas.find(m => m.id === id);
-            
-            this.motoristas = this.motoristas.filter(m => m.id !== id);
-            localStorage.setItem('pm_motoristas', JSON.stringify(this.motoristas));
-            
-            // Limpar usuários excluídos do sistema de autenticação
-            this.limparUsuariosExcluidos();
-            
-            this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
+            try {
+                // Excluir do SQLite
+                await DataService.deleteMotorista(id);
+                
+                // Atualizar localmente
+                this.motoristas = this.motoristas.filter(m => m.id !== id);
+                
+                this.loadCadastroMotoristaPage(document.getElementById('contentArea'));
+            } catch (error) {
+                console.error('Erro ao excluir motorista:', error);
+                alert('Erro ao excluir motorista. Tente novamente.');
+            }
         }
     }
 
-    // FUNÇÃO: Limpar usuários excluídos do sistema de autenticação
-    limparUsuariosExcluidos() {
-        const motoristasAtivos = this.motoristas.map(m => m.matricula);
+    // FUNÇÃO MODIFICADA: Carregar página de Cadastro de Viatura
+    async loadCadastroViaturaPage(container) {
+        // ADICIONAR: Recarregar dados mais recentes
+        await this.carregarDadosIniciais();
         
-        // Filtrar usuários que não estão mais na lista de motoristas ativos
-        auth.users = auth.users.filter(user => 
-            user.matricula === 'admin' || // Manter o admin
-            motoristasAtivos.includes(user.matricula) // Manter apenas motoristas ativos
-        );
-        
-        auth.saveUsers();
-        console.log('Usuários excluídos removidos do sistema de autenticação');
-    }
-
-    loadCadastroViaturaPage(container) {
         container.innerHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>Cadastro de Viatura</h2>
+                    <h2>🚗 Cadastro de Viatura</h2>
                     <form id="cadastroViaturaForm">
                         <div class="form-grid">
                             <div class="form-row">
@@ -2989,11 +2830,11 @@ class FrotaSystem {
                                         <td>${viatura.placa}</td>
                                         <td>${viatura.modelo}</td>
                                         <td>R$ ${viatura.saldo?.toFixed(2) || '0.00'}</td>
-                                        <td>${viatura.kmAtual}</td>
+                                        <td>${viatura.km_atual || viatura.kmAtual}</td>
                                         <td><span class="status-badge ${viatura.status === 'ATIVA' ? 'status-ativo' : viatura.status === 'MANUTENCAO' ? 'status-manutencao' : 'status-inativo'}">${viatura.status}</span></td>
                                         <td>
-                                            <button class="btn-action btn-edit" onclick="frotaSystem.editarViatura('${viatura.patrimonio}')">Editar</button>
-                                            <button class="btn-action btn-delete" onclick="frotaSystem.excluirViatura('${viatura.patrimonio}')">Excluir</button>
+                                            <button class="btn-action btn-edit" onclick="frotaSystem.editarViatura('${viatura.id}')">Editar</button>
+                                            <button class="btn-action btn-delete" onclick="frotaSystem.excluirViatura('${viatura.id}')">Excluir</button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -3032,7 +2873,8 @@ class FrotaSystem {
         });
     }
 
-    registrarViatura() {
+    // FUNÇÃO MODIFICADA: Registrar viatura
+    async registrarViatura() {
         const formData = {
             patrimonio: document.getElementById('viaturaPatrimonio').value,
             placa: document.getElementById('viaturaPlaca').value,
@@ -3041,39 +2883,46 @@ class FrotaSystem {
             ano: document.getElementById('viaturaAno').value,
             cor: document.getElementById('viaturaCor').value,
             locadora: document.getElementById('viaturaLocadora').value,
-            numeroCartao: document.getElementById('viaturaNumeroCartao').value,
+            numero_cartao: document.getElementById('viaturaNumeroCartao').value,
             combustivel: document.getElementById('viaturaCombustivel').value,
             saldo: parseFloat(document.getElementById('viaturaSaldo').value),
             status: document.getElementById('viaturaStatus').value,
-            kmAtual: parseInt(document.getElementById('viaturaKmAtual').value),
+            km_atual: parseInt(document.getElementById('viaturaKmAtual').value),
             observacoes: document.getElementById('viaturaObservacoes').value
         };
 
-        // Verificar se patrimônio já existe
-        if (this.viaturas.find(v => v.patrimonio === formData.patrimonio)) {
-            this.mostrarMensagem('cadastroViaturaError', 'Já existe uma viatura com este patrimônio.');
-            return;
+        try {
+            // Verificar se patrimônio já existe
+            const viaturasExistentes = await DataService.getViaturas();
+            if (viaturasExistentes.find(v => v.patrimonio === formData.patrimonio)) {
+                this.mostrarMensagem('cadastroViaturaError', 'Já existe uma viatura com este patrimônio.');
+                return;
+            }
+
+            // Verificar se placa já existe
+            if (viaturasExistentes.find(v => v.placa === formData.placa)) {
+                this.mostrarMensagem('cadastroViaturaError', 'Já existe uma viatura com esta placa.');
+                return;
+            }
+
+            // Salvar no SQLite
+            const result = await DataService.createViatura(formData);
+            
+            if (result.success) {
+                // Atualizar localmente
+                formData.id = result.id;
+                this.viaturas.push(formData);
+
+                this.mostrarMensagem('cadastroViaturaSuccess', 'Viatura cadastrada com sucesso!');
+                document.getElementById('cadastroViaturaForm').reset();
+                
+                // Recarregar a lista
+                await this.loadCadastroViaturaPage(document.getElementById('contentArea'));
+            }
+        } catch (error) {
+            console.error('Erro ao cadastrar viatura:', error);
+            this.mostrarMensagem('cadastroViaturaError', 'Erro ao cadastrar viatura. Tente novamente.');
         }
-
-        // Verificar se placa já existe
-        if (this.viaturas.find(v => v.placa === formData.placa)) {
-            this.mostrarMensagem('cadastroViaturaError', 'Já existe uma viatura com esta placa.');
-            return;
-        }
-
-        const viatura = {
-            id: Date.now(),
-            ...formData
-        };
-
-        this.viaturas.push(viatura);
-        localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
-
-        this.mostrarMensagem('cadastroViaturaSuccess', 'Viatura cadastrada com sucesso!');
-        document.getElementById('cadastroViaturaForm').reset();
-        
-        // Recarregar a lista
-        this.loadCadastroViaturaPage(document.getElementById('contentArea'));
     }
 
     filtrarViaturas(termo) {
@@ -3096,8 +2945,9 @@ class FrotaSystem {
         });
     }
 
-    editarViatura(patrimonio) {
-        const viatura = this.viaturas.find(v => v.patrimonio === patrimonio);
+    // FUNÇÃO MODIFICADA: Editar viatura
+    async editarViatura(id) {
+        const viatura = this.viaturas.find(v => v.id === id);
         if (!viatura) {
             alert('Viatura não encontrada!');
             return;
@@ -3113,11 +2963,11 @@ class FrotaSystem {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="editarPatrimonio">Patrimônio</label>
-                                    <input type="text" id="editarPatrimonio" value="${viatura.patrimonio}" required readonly>
+                                    <input type="text" id="editarPatrimonio" value="${viatura.patrimonio}" required readonly class="readonly-field">
                                 </div>
                                 <div class="form-group">
                                     <label for="editarPlaca">Placa</label>
-                                    <input type="text" id="editarPlaca" value="${viatura.placa}" required class="placa-mask">
+                                    <input type="text" id="editarPlaca" value="${viatura.placa}" required placeholder="ABC-1234" class="placa-mask">
                                 </div>
                             </div>
 
@@ -3138,29 +2988,29 @@ class FrotaSystem {
                                 </div>
                                 <div class="form-group">
                                     <label for="editarModelo">Modelo</label>
-                                    <input type="text" id="editarModelo" value="${viatura.modelo}" required>
+                                    <input type="text" id="editarModelo" value="${viatura.modelo}" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="editarAno">Ano</label>
-                                    <input type="number" id="editarAno" value="${viatura.ano}" required min="1990" max="2030">
+                                    <input type="number" id="editarAno" value="${viatura.ano}" required min="1990" max="2030" placeholder="2024">
                                 </div>
                                 <div class="form-group">
                                     <label for="editarCor">Cor</label>
-                                    <input type="text" id="editarCor" value="${viatura.cor}" required>
+                                    <input type="text" id="editarCor" value="${viatura.cor}" required placeholder="Cor da viatura">
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="editarLocadora">Locadora</label>
-                                    <input type="text" id="editarLocadora" value="${viatura.locadora}" required>
+                                    <input type="text" id="editarLocadora" value="${viatura.locadora}" required placeholder="Nome da locadora">
                                 </div>
                                 <div class="form-group">
                                     <label for="editarNumeroCartao">Número do Cartão</label>
-                                    <input type="text" id="editarNumeroCartao" value="${viatura.numeroCartao}" required>
+                                    <input type="text" id="editarNumeroCartao" value="${viatura.numero_cartao || viatura.numeroCartao}" required placeholder="Número do cartão de abastecimento">
                                 </div>
                             </div>
 
@@ -3179,7 +3029,7 @@ class FrotaSystem {
                                 </div>
                                 <div class="form-group">
                                     <label for="editarSaldo">Saldo (R$)</label>
-                                    <input type="number" id="editarSaldo" value="${viatura.saldo || 0}" step="0.01" required min="0">
+                                    <input type="number" id="editarSaldo" value="${viatura.saldo || 0}" step="0.01" required min="0" placeholder="0.00">
                                 </div>
                             </div>
 
@@ -3195,14 +3045,14 @@ class FrotaSystem {
                                 </div>
                                 <div class="form-group">
                                     <label for="editarKmAtual">KM Atual</label>
-                                    <input type="number" id="editarKmAtual" value="${viatura.kmAtual}" required min="0" step="1">
+                                    <input type="number" id="editarKmAtual" value="${viatura.km_atual || viatura.kmAtual}" required min="0" step="1" placeholder="Quilometragem atual">
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group full-width">
                                     <label for="editarObservacoes">Observações</label>
-                                    <textarea id="editarObservacoes">${viatura.observacoes || ''}</textarea>
+                                    <textarea id="editarObservacoes" placeholder="Observações sobre a viatura...">${viatura.observacoes || ''}</textarea>
                                 </div>
                             </div>
                         </div>
@@ -3227,7 +3077,7 @@ class FrotaSystem {
 
         document.getElementById('contentArea').innerHTML = formHTML;
 
-        // Configurar máscara de placa no formulário de edição
+        // Configurar máscara de placa
         const placaInput = document.getElementById('editarPlaca');
         if (placaInput) {
             placaInput.addEventListener('input', function(e) {
@@ -3242,12 +3092,13 @@ class FrotaSystem {
         // Configurar envio do formulário de edição
         document.getElementById('editarViaturaForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            this.salvarEdicaoViatura(patrimonio);
+            this.salvarEdicaoViatura(id);
         });
     }
-
-    salvarEdicaoViatura(patrimonioOriginal) {
-        const viaturaIndex = this.viaturas.findIndex(v => v.patrimonio === patrimonioOriginal);
+    
+    // FUNÇÃO MODIFICADA: Salvar edição da viatura
+    async salvarEdicaoViatura(viaturaId) {
+        const viaturaIndex = this.viaturas.findIndex(v => v.id === viaturaId);
         if (viaturaIndex === -1) {
             this.mostrarMensagem('editarViaturaError', 'Viatura não encontrada!');
             return;
@@ -3261,55 +3112,76 @@ class FrotaSystem {
             ano: document.getElementById('editarAno').value,
             cor: document.getElementById('editarCor').value,
             locadora: document.getElementById('editarLocadora').value,
-            numeroCartao: document.getElementById('editarNumeroCartao').value,
+            numero_cartao: document.getElementById('editarNumeroCartao').value,
             combustivel: document.getElementById('editarCombustivel').value,
             saldo: parseFloat(document.getElementById('editarSaldo').value),
             status: document.getElementById('editarStatus').value,
-            kmAtual: parseInt(document.getElementById('editarKmAtual').value),
+            km_atual: parseInt(document.getElementById('editarKmAtual').value),
             observacoes: document.getElementById('editarObservacoes').value
         };
 
-        // Verificar se a placa já existe em outra viatura
-        const placaExistente = this.viaturas.find(v => v.placa === formData.placa && v.patrimonio !== patrimonioOriginal);
-        if (placaExistente) {
-            this.mostrarMensagem('editarViaturaError', 'Já existe uma viatura com esta placa.');
-            return;
+        try {
+            // Verificar se a placa já existe em outra viatura
+            const viaturasExistentes = await DataService.getViaturas();
+            const placaExistente = viaturasExistentes.find(v => v.placa === formData.placa && v.id !== viaturaId);
+            if (placaExistente) {
+                this.mostrarMensagem('editarViaturaError', 'Já existe uma viatura com esta placa.');
+                return;
+            }
+
+            // Atualizar no SQLite
+            await DataService.updateViatura(viaturaId, formData);
+
+            // Atualizar localmente
+            this.viaturas[viaturaIndex] = {
+                ...this.viaturas[viaturaIndex],
+                ...formData
+            };
+            
+            this.mostrarMensagem('editarViaturaSuccess', 'Viatura atualizada com sucesso!');
+            
+            // Voltar para a lista após 2 segundos
+            setTimeout(() => {
+                this.loadCadastroViaturaPage(document.getElementById('contentArea'));
+            }, 2000);
+        } catch (error) {
+            console.error('Erro ao atualizar viatura:', error);
+            this.mostrarMensagem('editarViaturaError', 'Erro ao atualizar viatura. Tente novamente.');
         }
-
-        // Atualizar os dados da viatura
-        this.viaturas[viaturaIndex] = {
-            ...this.viaturas[viaturaIndex],
-            ...formData
-        };
-
-        localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
-        
-        this.mostrarMensagem('editarViaturaSuccess', 'Viatura atualizada com sucesso!');
-        
-        // Voltar para a lista após 2 segundos
-        setTimeout(() => {
-            this.loadCadastroViaturaPage(document.getElementById('contentArea'));
-        }, 2000);
     }
 
-    excluirViatura(patrimonio) {
+    // FUNÇÃO MODIFICADA: Excluir viatura
+    async excluirViatura(viaturaId) {
         if (confirm('Tem certeza que deseja excluir esta viatura?')) {
-            this.viaturas = this.viaturas.filter(v => v.patrimonio !== patrimonio);
-            localStorage.setItem('pm_viaturas', JSON.stringify(this.viaturas));
-            this.loadCadastroViaturaPage(document.getElementById('contentArea'));
+            try {
+                // Excluir do SQLite
+                await DataService.deleteViatura(viaturaId);
+                
+                // Atualizar localmente
+                this.viaturas = this.viaturas.filter(v => v.id !== viaturaId);
+                
+                this.loadCadastroViaturaPage(document.getElementById('contentArea'));
+            } catch (error) {
+                console.error('Erro ao excluir viatura:', error);
+                alert('Erro ao excluir viatura. Tente novamente.');
+            }
         }
     }
 
-    loadEmprestimoViaturaPage(container) {
+    // FUNÇÃO MODIFICADA: Carregar página de Empréstimo de Viatura
+    async loadEmprestimoViaturaPage(container) {
         const user = auth.getCurrentUser();
+        
+        // ADICIONAR: Recarregar dados mais recentes
+        await this.carregarDadosIniciais();
         
         container.innerHTML = `
             <div class="page-content fade-in">
                 <div class="form-section">
-                    <h2>Empréstimo de Viatura para Outra Unidade</h2>
+                    <h2>📝 Empréstimo de Viatura para Outra Unidade</h2>
                     <form id="emprestimoViaturaForm">
                         <div class="form-grid">
-                            <h3>Dados do Condutor</h3>
+                            <h3>👤 Dados do Condutor</h3>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="emprestimoGrad">Graduação</label>
@@ -3358,13 +3230,13 @@ class FrotaSystem {
                                 </div>
                             </div>
 
-                            <h3>Dados da Viatura</h3>
+                            <h3>🚙 Dados da Viatura</h3>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="emprestimoPatrimonio">Patrimônio</label>
+                                    <label for="emprestimoPatrimonio">Viatura</label>
                                     <select id="emprestimoPatrimonio" required>
                                         <option value="">Selecione a viatura...</option>
-                                        ${this.viaturas.filter(v => v.status === 'ATIVA').map(v => `<option value="${v.patrimonio}">${v.patrimonio} - ${v.placa} - ${v.modelo}</option>`).join('')}
+                                        ${this.viaturas.filter(v => v.status === 'ATIVA').map(v => `<option value="${v.id}">${v.patrimonio} - ${v.placa} - ${v.modelo}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -3373,25 +3245,25 @@ class FrotaSystem {
                                 </div>
                             </div>
                             
-                            <h3>Período do Empréstimo</h3>
+                            <h3>📅 Período do Empréstimo</h3>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="emprestimoDataInicial">Data Inicial</label>
+                                    <label for="emprestimoDataInicial">Data de Saída</label>
                                     <input type="date" id="emprestimoDataInicial" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="emprestimoHoraInicial">Hora Inicial</label>
+                                    <label for="emprestimoHoraInicial">Hora de Saída</label>
                                     <input type="time" id="emprestimoHoraInicial" required>
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="emprestimoDataFinal">Data Final Prevista</label>
+                                    <label for="emprestimoDataFinal">Data de Retorno Prevista</label>
                                     <input type="date" id="emprestimoDataFinal" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="emprestimoHoraFinal">Hora Final Prevista</label>
+                                    <label for="emprestimoHoraFinal">Hora de Retorno Prevista</label>
                                     <input type="time" id="emprestimoHoraFinal" required>
                                 </div>
                             </div>
@@ -3427,6 +3299,70 @@ class FrotaSystem {
                             Registrar Empréstimo
                         </button>
                     </form>
+                </div>
+
+                <div class="form-section">
+                    <h2>📋 Empréstimos Ativos</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Viatura</th>
+                                    <th>Condutor</th>
+                                    <th>Unidade</th>
+                                    <th>Período</th>
+                                    <th>KM Inicial</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaEmprestimosAtivos">
+                                ${this.emprestimos.filter(e => e.status === 'ATIVO').map(emprestimo => `
+                                    <tr>
+                                        <td>${emprestimo.viatura?.patrimonio || 'N/A'}</td>
+                                        <td>${emprestimo.condutor_nome}</td>
+                                        <td>${emprestimo.condutor_unidade}</td>
+                                        <td>${new Date(emprestimo.data_inicial).toLocaleDateString('pt-BR')}</td>
+                                        <td>${emprestimo.km_inicial}</td>
+                                        <td><span class="status-badge status-ativo">${emprestimo.status}</span></td>
+                                        <td>
+                                            <button class="btn-action btn-edit" onclick="frotaSystem.finalizarEmprestimo(${emprestimo.id})">Finalizar</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>📊 Histórico de Empréstimos</h2>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Viatura</th>
+                                    <th>Condutor</th>
+                                    <th>Período</th>
+                                    <th>KM Inicial</th>
+                                    <th>KM Final</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historicoEmprestimos">
+                                ${this.emprestimos.filter(e => e.status !== 'ATIVO').slice(-10).reverse().map(emprestimo => `
+                                    <tr>
+                                        <td>${emprestimo.viatura?.patrimonio || 'N/A'}</td>
+                                        <td>${emprestimo.condutor_nome}</td>
+                                        <td>${new Date(emprestimo.data_inicial).toLocaleDateString('pt-BR')}</td>
+                                        <td>${emprestimo.km_inicial}</td>
+                                        <td>${emprestimo.km_final || '-'}</td>
+                                        <td><span class="status-badge ${emprestimo.status === 'FINALIZADO' ? 'status-finalizada' : 'status-inativo'}">${emprestimo.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         `;
@@ -3487,14 +3423,20 @@ class FrotaSystem {
             });
         }
     }
-
-    registrarEmprestimo() {
-        alert('Funcionalidade de empréstimo de viatura em desenvolvimento');
-        // Implementar lógica de empréstimo aqui
+    
+    // FUNÇÃO MODIFICADA: Registrar empréstimo
+    async registrarEmprestimo() {
+        try {
+            alert('Funcionalidade de empréstimo de viatura em desenvolvimento');
+            // Implementar lógica de empréstimo aqui usando DataService.createEmprestimo()
+        } catch (error) {
+            console.error('Erro ao registrar empréstimo:', error);
+            alert('Erro ao registrar empréstimo. Tente novamente.');
+        }
     }
 
     // FUNÇÃO MODIFICADA: Carregar página de Viaturas Ativas - VERSÃO OTIMIZADA
-    loadViaturasAtivasPage(container) {
+    async loadViaturasAtivasPage(container) {
         const hoje = new Date().toISOString().split('T')[0];
         
         container.innerHTML = `
@@ -3552,11 +3494,11 @@ class FrotaSystem {
                         <div class="cards-grid">
                             <div class="card">
                                 <h3>Viaturas Ativas Hoje</h3>
-                                <p class="numero-viaturas">${this.obterViaturasAtivasHoje().length}</p>
+                                <p class="numero-viaturas">${(await this.obterViaturasAtivasHoje()).length}</p>
                             </div>
                             <div class="card">
                                 <h3>Viaturas Não Ativadas</h3>
-                                <p class="numero-inativas">${this.obterViaturasNaoAtivadasHoje().length}</p>
+                                <p class="numero-inativas">${(await this.obterViaturasNaoAtivadasHoje()).length}</p>
                             </div>
                             <div class="card">
                                 <h3>Total de Registros</h3>
@@ -3576,15 +3518,15 @@ class FrotaSystem {
                                     <th>Motorista</th>
                                     <th>Matrícula</th>
                                     <th>CPF</th>
-									<th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">Emprego<br>Missão</th>
-									<th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">KM<br>Inicial</th>
-									<th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">KM<br>Final</th>
+                                    <th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">Emprego<br>Missão</th>
+                                    <th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">KM<br>Inicial</th>
+                                    <th style="white-space: normal; line-height: 1.2; padding: 8px 4px;">KM<br>Final</th>
                                     <th>Status</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="listaViaturasAtivas">
-                                ${this.gerarListaViaturasAtivasOtimizada('hoje', 'ativas')}
+                                ${await this.gerarListaViaturasAtivasOtimizada('hoje', 'ativas')}
                             </tbody>
                         </table>
                     </div>
@@ -3613,161 +3555,163 @@ class FrotaSystem {
         }, 100);
     }
 
-    // FUNÇÃO: Obter viaturas ativas hoje
-    obterViaturasAtivasHoje() {
+    // FUNÇÃO MODIFICADA: Obter viaturas ativas hoje
+    async obterViaturasAtivasHoje() {
         const hoje = new Date().toISOString().split('T')[0];
         return this.registrosUso.filter(registro => 
-            registro.dadosIniciais.data === hoje && !registro.dadosFinais.km
+            registro.data_inicial === hoje && !registro.km_final
         );
     }
 
-	// FUNÇÃO MODIFICADA: Gerar lista de viaturas ativas otimizada
-	gerarListaViaturasAtivasOtimizada(periodo = 'hoje', status = 'ativas') {
-		let registrosFiltrados = [];
-		const hoje = new Date();
-		
-		switch (periodo) {
-			case 'hoje':
-				const hojeStr = hoje.toISOString().split('T')[0];
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					registro.dadosIniciais.data === hojeStr
-				);
-				break;
-			case 'ontem':
-				const ontem = new Date(hoje);
-				ontem.setDate(hoje.getDate() - 1);
-				const ontemStr = ontem.toISOString().split('T')[0];
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					registro.dadosIniciais.data === ontemStr
-				);
-				break;
-			case 'semana':
-				const inicioSemana = new Date(hoje);
-				inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					new Date(registro.dadosIniciais.data) >= inicioSemana
-				);
-				break;
-			case 'mes':
-				const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					new Date(registro.dadosIniciais.data) >= inicioMes
-				);
-				break;
-			case 'ano':
-				const inicioAno = new Date(hoje.getFullYear(), 0, 1);
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					new Date(registro.dadosIniciais.data) >= inicioAno
-				);
-				break;
-			case 'especifico':
-				break;
-			case 'todos':
-				registrosFiltrados = [...this.registrosUso];
-				break;
-			default:
-				registrosFiltrados = this.registrosUso.filter(registro => 
-					registro.dadosIniciais.data === periodo
-				);
-		}
-		
-		// Ordenar por data mais recente
-		registrosFiltrados.sort((a, b) => new Date(b.dadosIniciais.data) - new Date(a.dadosIniciais.data));
-		
-		if (status === 'inativas') {
-			const viaturasAtivas = registrosFiltrados.map(v => v.viatura.patrimonio);
-			const viaturasNaoAtivadas = this.viaturas.filter(viatura => 
-				viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.patrimonio)
-			);
-			
-			return viaturasNaoAtivadas.map(viatura => {
-				const viaturaText = `${viatura.patrimonio} - ${viatura.placa}`;
-				return `
-					<tr>
-						<td title="${new Date().toLocaleDateString('pt-BR')}">
-							${new Date().toLocaleDateString('pt-BR')}
-						</td>
-						<td>-</td>
-						<td title="${viaturaText}">${viaturaText}</td>
-						<td colspan="4" style="text-align: center; color: #666;">- NÃO ATIVADA -</td>
-						<td>-</td>
-						<td>-</td>
-						<td>
-							<span class="status-badge-compact status-nao-ativada">Não Ativada</span>
-						</td>
-						<td>-</td>
-					</tr>
-				`;
-			}).join('');
-		}
-		
-		// VERIFICAÇÃO DE SEGURANÇA - se não há registros
-		if (registrosFiltrados.length === 0) {
-			return `
-				<tr>
-					<td colspan="11" style="text-align: center; padding: 2rem; color: #666;">
-						Nenhum registro encontrado para o período selecionado
-					</td>
-				</tr>
-			`;
-		}
-		
-		return registrosFiltrados.map(registro => {
-			const placa = this.obterPlacaViatura(registro.viatura.patrimonio);
-			const viaturaText = `${registro.viatura.patrimonio} - ${placa}`;
-			
-			// NOVA LÓGICA: Graduação + Nome de Guerra (COM TRY-CATCH PARA SEGURANÇA)
-			let motoristaText = 'N/E';
-			try {
-				const graduacao = registro.motorista.grad || '';
-				const nomeGuerra = this.obterNomeGuerra(registro.motorista.matricula);
-				motoristaText = `${graduacao} ${nomeGuerra}`.trim();
-			} catch (error) {
-				console.error('Erro ao obter nome de guerra:', error);
-				motoristaText = registro.motorista.nome || 'N/E';
-			}
-			
-			const motoristaDisplay = motoristaText.length > 20 ? 
-				motoristaText.substring(0, 17) + '...' : motoristaText;
-			const missaoText = registro.viatura.emprego.length > 25 ? 
-				registro.viatura.emprego.substring(0, 22) + '...' : registro.viatura.emprego;
-			
-			return `
-				<tr>
-					<td title="${new Date(registro.dadosIniciais.data).toLocaleDateString('pt-BR')}">
-						${new Date(registro.dadosIniciais.data).toLocaleDateString('pt-BR').split('/').map((v, i) => i === 2 ? v.slice(-2) : v).join('/')}
-					</td>
-					<td>${registro.dadosIniciais.hora}</td>
-					<td title="${viaturaText}">${viaturaText}</td>
-					<td title="${motoristaText}">${motoristaDisplay}</td>
-					<td>${registro.motorista.matricula}</td>
-					<td>${registro.motorista.cpf}</td>
-					<td title="${registro.viatura.emprego}">${missaoText}</td>
-					<td>${registro.dadosIniciais.km}</td>
-					<td>${registro.dadosFinais.km || '-'}</td>
-					<td>
-						<span class="status-badge-compact ${registro.dadosFinais.km ? 'status-finalizada' : 'status-ativo'}">
-							${registro.dadosFinais.km ? 'Finalizada' : 'Em Andamento'}
-						</span>
-					</td>
-					<td>
-						<button class="btn-action btn-view" onclick="frotaSystem.verDetalhesRegistro(${registro.id})" title="Ver detalhes completos">
-							📋
-						</button>
-					</td>
-				</tr>
-			`;
-		}).join('');
-	}
+    // FUNÇÃO MODIFICADA: Gerar lista de viaturas ativas otimizada
+    async gerarListaViaturasAtivasOtimizada(periodo = 'hoje', status = 'ativas') {
+        let registrosFiltrados = [];
+        const hoje = new Date();
+        
+        switch (periodo) {
+            case 'hoje':
+                const hojeStr = hoje.toISOString().split('T')[0];
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    registro.data_inicial === hojeStr
+                );
+                break;
+            case 'ontem':
+                const ontem = new Date(hoje);
+                ontem.setDate(hoje.getDate() - 1);
+                const ontemStr = ontem.toISOString().split('T')[0];
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    registro.data_inicial === ontemStr
+                );
+                break;
+            case 'semana':
+                const inicioSemana = new Date(hoje);
+                inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    new Date(registro.data_inicial) >= inicioSemana
+                );
+                break;
+            case 'mes':
+                const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    new Date(registro.data_inicial) >= inicioMes
+                );
+                break;
+            case 'ano':
+                const inicioAno = new Date(hoje.getFullYear(), 0, 1);
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    new Date(registro.data_inicial) >= inicioAno
+                );
+                break;
+            case 'especifico':
+                break;
+            case 'todos':
+                registrosFiltrados = [...this.registrosUso];
+                break;
+            default:
+                registrosFiltrados = this.registrosUso.filter(registro => 
+                    registro.data_inicial === periodo
+                );
+        }
+        
+        // Ordenar por data mais recente
+        registrosFiltrados.sort((a, b) => new Date(b.data_inicial) - new Date(a.data_inicial));
+        
+        if (status === 'inativas') {
+            const viaturasAtivas = registrosFiltrados.map(v => v.viatura_id);
+            const viaturasNaoAtivadas = this.viaturas.filter(viatura => 
+                viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.id)
+            );
+            
+            return viaturasNaoAtivadas.map(viatura => {
+                const viaturaText = `${viatura.patrimonio} - ${viatura.placa}`;
+                return `
+                    <tr>
+                        <td title="${new Date().toLocaleDateString('pt-BR')}">
+                            ${new Date().toLocaleDateString('pt-BR')}
+                        </td>
+                        <td>-</td>
+                        <td title="${viaturaText}">${viaturaText}</td>
+                        <td colspan="4" style="text-align: center; color: #666;">- NÃO ATIVADA -</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>
+                            <span class="status-badge-compact status-nao-ativada">Não Ativada</span>
+                        </td>
+                        <td>-</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // VERIFICAÇÃO DE SEGURANÇA - se não há registros
+        if (registrosFiltrados.length === 0) {
+            return `
+                <tr>
+                    <td colspan="11" style="text-align: center; padding: 2rem; color: #666;">
+                        Nenhum registro encontrado para o período selecionado
+                    </td>
+                </tr>
+            `;
+        }
+        
+        return registrosFiltrados.map(registro => {
+            const viatura = this.viaturas.find(v => v.id === registro.viatura_id);
+            const placa = viatura ? viatura.placa : 'N/E';
+            const viaturaText = `${viatura?.patrimonio || 'N/E'} - ${placa}`;
+            
+            // NOVA LÓGICA: Graduação + Nome de Guerra (COM TRY-CATCH PARA SEGURANÇA)
+            let motoristaText = 'N/E';
+            try {
+                const motorista = this.motoristas.find(m => m.id === registro.motorista_id);
+                const graduacao = motorista?.graduacao || '';
+                const nomeGuerra = motorista?.nome_guerra || '';
+                motoristaText = `${graduacao} ${nomeGuerra}`.trim();
+            } catch (error) {
+                console.error('Erro ao obter dados do motorista:', error);
+                motoristaText = 'N/E';
+            }
+            
+            const motoristaDisplay = motoristaText.length > 20 ? 
+                motoristaText.substring(0, 17) + '...' : motoristaText;
+            const missaoText = registro.emprego_missao && registro.emprego_missao.length > 25 ? 
+                registro.emprego_missao.substring(0, 22) + '...' : (registro.emprego_missao || 'N/E');
+            
+            return `
+                <tr>
+                    <td title="${new Date(registro.data_inicial).toLocaleDateString('pt-BR')}">
+                        ${new Date(registro.data_inicial).toLocaleDateString('pt-BR').split('/').map((v, i) => i === 2 ? v.slice(-2) : v).join('/')}
+                    </td>
+                    <td>${registro.hora_inicial}</td>
+                    <td title="${viaturaText}">${viaturaText}</td>
+                    <td title="${motoristaText}">${motoristaDisplay}</td>
+                    <td>${registro.motorista?.matricula || 'N/E'}</td>
+                    <td>${registro.motorista?.cpf || 'N/E'}</td>
+                    <td title="${registro.emprego_missao || 'N/E'}">${missaoText}</td>
+                    <td>${registro.km_inicial}</td>
+                    <td>${registro.km_final || '-'}</td>
+                    <td>
+                        <span class="status-badge-compact ${registro.km_final ? 'status-finalizada' : 'status-ativo'}">
+                            ${registro.km_final ? 'Finalizada' : 'Em Andamento'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn-action btn-view" onclick="frotaSystem.verDetalhesRegistro('${registro.id}')" title="Ver detalhes completos">
+                            📋
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
-    // FUNÇÃO: Obter placa da viatura pelo patrimônio
+    // FUNÇÃO MODIFICADA: Obter placa da viatura pelo patrimônio
     obterPlacaViatura(patrimonio) {
         const viatura = this.viaturas.find(v => v.patrimonio === patrimonio);
         return viatura ? viatura.placa : 'N/E';
     }
 
     // FUNÇÃO MODIFICADA: Filtrar viaturas ativas
-    filtrarViaturasAtivas() {
+    async filtrarViaturasAtivas() {
         const periodo = document.getElementById('filtroPeriodo').value;
         const status = document.getElementById('filtroStatus').value;
         
@@ -3776,7 +3720,7 @@ class FrotaSystem {
             periodoFiltro = document.getElementById('filtroDataEspecifica').value;
         }
         
-        const listaHTML = this.gerarListaViaturasAtivasOtimizada(periodoFiltro, status);
+        const listaHTML = await this.gerarListaViaturasAtivasOtimizada(periodoFiltro, status);
         document.getElementById('listaViaturasAtivas').innerHTML = listaHTML;
         
         // Atualizar contadores
@@ -3793,22 +3737,25 @@ class FrotaSystem {
         }, 100);
     }
 
-    // FUNÇÃO: Atualizar contadores
-    atualizarContadoresViaturas() {
-        const viaturasAtivas = this.obterViaturasAtivasHoje().length;
-        const viaturasInativas = this.obterViaturasNaoAtivadasHoje().length;
+    // FUNÇÃO MODIFICADA: Atualizar contadores
+    async atualizarContadoresViaturas() {
+        const viaturasAtivas = (await this.obterViaturasAtivasHoje()).length;
+        const viaturasInativas = (await this.obterViaturasNaoAtivadasHoje()).length;
         
         document.querySelector('.numero-viaturas').textContent = viaturasAtivas;
         document.querySelector('.numero-inativas').textContent = viaturasInativas;
     }
 
-    // FUNÇÃO: Ver detalhes completos do registro
-    verDetalhesRegistro(registroId) {
+    // FUNÇÃO MODIFICADA: Ver detalhes completos do registro
+    async verDetalhesRegistro(registroId) {
         const registro = this.registrosUso.find(r => r.id === registroId);
         if (!registro) {
             alert('Registro não encontrado!');
             return;
         }
+
+        const viatura = this.viaturas.find(v => v.id === registro.viatura_id);
+        const motorista = this.motoristas.find(m => m.id === registro.motorista_id);
 
         // Criar uma nova aba com os detalhes completos
         const novaAba = window.open('', '_blank');
@@ -3818,7 +3765,7 @@ class FrotaSystem {
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Detalhes do Registro - ${registro.viatura.patrimonio}</title>
+                <title>Detalhes do Registro - ${viatura?.patrimonio || 'N/E'}</title>
                 <style>
                     body {
                         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -3925,19 +3872,19 @@ class FrotaSystem {
                         <div class="info-grid">
                             <div class="info-item">
                                 <span class="info-label">Graduação</span>
-                                <span class="info-value">${registro.motorista.grad}</span>
+                                <span class="info-value">${motorista?.graduacao || 'N/E'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Matrícula</span>
-                                <span class="info-value">${registro.motorista.matricula}</span>
+                                <span class="info-value">${motorista?.matricula || 'N/E'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">CPF</span>
-                                <span class="info-value">${registro.motorista.cpf}</span>
+                                <span class="info-value">${motorista?.cpf || 'N/E'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Nome Completo</span>
-                                <span class="info-value">${registro.motorista.nome}</span>
+                                <span class="info-value">${motorista?.nome_completo || 'N/E'}</span>
                             </div>
                         </div>
                     </div>
@@ -3947,15 +3894,15 @@ class FrotaSystem {
                         <div class="info-grid">
                             <div class="info-item">
                                 <span class="info-label">Patrimônio</span>
-                                <span class="info-value">${registro.viatura.patrimonio}</span>
+                                <span class="info-value">${viatura?.patrimonio || 'N/E'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Placa</span>
-                                <span class="info-value">${this.obterPlacaViatura(registro.viatura.patrimonio)}</span>
+                                <span class="info-value">${viatura?.placa || 'N/E'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Emprego/Missão</span>
-                                <span class="info-value">${registro.viatura.emprego}</span>
+                                <span class="info-value">${registro.emprego_missao || 'N/E'}</span>
                             </div>
                         </div>
                     </div>
@@ -3965,15 +3912,15 @@ class FrotaSystem {
                         <div class="info-grid">
                             <div class="info-item">
                                 <span class="info-label">Data</span>
-                                <span class="info-value">${new Date(registro.dadosIniciais.data).toLocaleDateString('pt-BR')}</span>
+                                <span class="info-value">${new Date(registro.data_inicial).toLocaleDateString('pt-BR')}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Hora de Saída</span>
-                                <span class="info-value">${registro.dadosIniciais.hora}</span>
+                                <span class="info-value">${registro.hora_inicial}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">KM Inicial</span>
-                                <span class="info-value">${registro.dadosIniciais.km}</span>
+                                <span class="info-value">${registro.km_inicial}</span>
                             </div>
                         </div>
                     </div>
@@ -3983,15 +3930,15 @@ class FrotaSystem {
                         <div class="info-grid">
                             <div class="info-item">
                                 <span class="info-label">Data de Retorno</span>
-                                <span class="info-value">${registro.dadosFinais.data ? new Date(registro.dadosFinais.data).toLocaleDateString('pt-BR') : 'Em andamento'}</span>
+                                <span class="info-value">${registro.data_final ? new Date(registro.data_final).toLocaleDateString('pt-BR') : 'Em andamento'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">Hora de Retorno</span>
-                                <span class="info-value">${registro.dadosFinais.hora || 'Em andamento'}</span>
+                                <span class="info-value">${registro.hora_final || 'Em andamento'}</span>
                             </div>
                             <div class="info-item">
                                 <span class="info-label">KM Final</span>
-                                <span class="info-value">${registro.dadosFinais.km || 'Em andamento'}</span>
+                                <span class="info-value">${registro.km_final || 'Em andamento'}</span>
                             </div>
                         </div>
                     </div>
@@ -4009,8 +3956,8 @@ class FrotaSystem {
                         <h2>📊 Status do Registro</h2>
                         <div class="info-item">
                             <span class="info-label">Status</span>
-                            <span class="status-badge ${registro.dadosFinais.km ? 'status-finalizada' : 'status-ativo'}">
-                                ${registro.dadosFinais.km ? 'Missão Finalizada' : 'Em Andamento'}
+                            <span class="status-badge ${registro.km_final ? 'status-finalizada' : 'status-ativo'}">
+                                ${registro.km_final ? 'Missão Finalizada' : 'Em Andamento'}
                             </span>
                         </div>
                     </div>
@@ -4023,12 +3970,12 @@ class FrotaSystem {
         novaAba.document.close();
     }
 
-    // FUNÇÃO: Exportar relatório
-    exportarRelatorio(tipo) {
+    // FUNÇÃO MODIFICADA: Exportar relatório
+    async exportarRelatorio(tipo) {
         const nomeArquivo = `Relatorio_Viaturas_Ativas_${new Date().toISOString().split('T')[0]}`;
 
         if (tipo === 'pdf') {
-            this.exportarParaPDF(null, nomeArquivo);
+            await this.exportarParaPDF(null, nomeArquivo);
         } else if (tipo === 'excel') {
             const tabela = document.getElementById('tabelaViaturasAtivas');
             this.exportarParaExcel(tabela, nomeArquivo);
@@ -4036,7 +3983,7 @@ class FrotaSystem {
     }
 
     // FUNÇÃO MODIFICADA: Exportar para PDF - VERSÃO COMPLETA
-    exportarParaPDF(tabela, nomeArquivo) {
+    async exportarParaPDF(tabela, nomeArquivo) {
         const periodo = document.getElementById('filtroPeriodo').value;
         const status = document.getElementById('filtroStatus').value;
         const periodoTexto = document.getElementById('filtroPeriodo').options[document.getElementById('filtroPeriodo').selectedIndex].text;
@@ -4050,7 +3997,7 @@ class FrotaSystem {
             case 'hoje':
                 const hojeStr = hoje.toISOString().split('T')[0];
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    registro.dadosIniciais.data === hojeStr
+                    registro.data_inicial === hojeStr
                 );
                 break;
             case 'ontem':
@@ -4058,32 +4005,32 @@ class FrotaSystem {
                 ontem.setDate(hoje.getDate() - 1);
                 const ontemStr = ontem.toISOString().split('T')[0];
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    registro.dadosIniciais.data === ontemStr
+                    registro.data_inicial === ontemStr
                 );
                 break;
             case 'semana':
                 const inicioSemana = new Date(hoje);
                 inicioSemana.setDate(hoje.getDate() - hoje.getDay());
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    new Date(registro.dadosIniciais.data) >= inicioSemana
+                    new Date(registro.data_inicial) >= inicioSemana
                 );
                 break;
             case 'mes':
                 const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    new Date(registro.dadosIniciais.data) >= inicioMes
+                    new Date(registro.data_inicial) >= inicioMes
                 );
                 break;
             case 'ano':
                 const inicioAno = new Date(hoje.getFullYear(), 0, 1);
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    new Date(registro.dadosIniciais.data) >= inicioAno
+                    new Date(registro.data_inicial) >= inicioAno
                 );
                 break;
             case 'especifico':
                 const dataEspecifica = document.getElementById('filtroDataEspecifica').value;
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    registro.dadosIniciais.data === dataEspecifica
+                    registro.data_inicial === dataEspecifica
                 );
                 break;
             case 'todos':
@@ -4091,20 +4038,20 @@ class FrotaSystem {
                 break;
             default:
                 registrosFiltrados = this.registrosUso.filter(registro => 
-                    registro.dadosIniciais.data === periodo
+                    registro.data_inicial === periodo
                 );
         }
         
         // Ordenar por data mais recente
-        registrosFiltrados.sort((a, b) => new Date(b.dadosIniciais.data) - new Date(a.dadosIniciais.data));
+        registrosFiltrados.sort((a, b) => new Date(b.data_inicial) - new Date(a.data_inicial));
         
         let tabelaHTML = '';
         
         if (status === 'inativas') {
             // Mostrar viaturas não ativadas
-            const viaturasAtivas = registrosFiltrados.map(v => v.viatura.patrimonio);
+            const viaturasAtivas = registrosFiltrados.map(v => v.viatura_id);
             const viaturasNaoAtivadas = this.viaturas.filter(viatura => 
-                viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.patrimonio)
+                viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.id)
             );
             
             tabelaHTML = `
@@ -4145,7 +4092,7 @@ class FrotaSystem {
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Data</th>
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Hora Saída</th>
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Viatura</th>
-							<th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Graduação</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Graduação</th>
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Motorista</th>
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">Matrícula</th>
                             <th style="border: 1px solid #ddd; padding: 6px; background: #f5f5f5; text-align: left;">CPF</th>
@@ -4162,31 +4109,32 @@ class FrotaSystem {
             `;
             
             registrosFiltrados.forEach(registro => {
-                const placa = this.obterPlacaViatura(registro.viatura.patrimonio);
-                const viaturaInfo = this.viaturas.find(v => v.patrimonio === registro.viatura.patrimonio);
-                const modelo = viaturaInfo ? viaturaInfo.modelo : 'N/E';
+                const viatura = this.viaturas.find(v => v.id === registro.viatura_id);
+                const motorista = this.motoristas.find(m => m.id === registro.motorista_id);
+                const placa = viatura ? viatura.placa : 'N/E';
+                const modelo = viatura ? viatura.modelo : 'N/E';
                 
                 tabelaHTML += `
                     <tr>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${new Date(registro.dadosIniciais.data).toLocaleDateString('pt-BR')}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.dadosIniciais.hora}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${new Date(registro.data_inicial).toLocaleDateString('pt-BR')}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.hora_inicial}</td>
                         <td style="border: 1px solid #ddd; padding: 6px;">
-                            <strong>${registro.viatura.patrimonio}</strong><br>
+                            <strong>${viatura?.patrimonio || 'N/E'}</strong><br>
                             <small>${placa}<br>${modelo}</small>
                         </td>
-						<td style="border: 1px solid #ddd; padding: 6px;">${registro.motorista.grad}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${this.obterNomeGuerra(registro.motorista.matricula)}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.motorista.matricula}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.motorista.cpf}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.viatura.emprego}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.dadosIniciais.km}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.dadosFinais.km || '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.dadosFinais.data ? new Date(registro.dadosFinais.data).toLocaleDateString('pt-BR') : '-'}</td>
-                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.dadosFinais.hora || '-'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${motorista?.graduacao || 'N/E'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${motorista?.nome_guerra || 'N/E'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${motorista?.matricula || 'N/E'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${motorista?.cpf || 'N/E'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.emprego_missao || 'N/E'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.km_inicial}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.km_final || '-'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.data_final ? new Date(registro.data_final).toLocaleDateString('pt-BR') : '-'}</td>
+                        <td style="border: 1px solid #ddd; padding: 6px;">${registro.hora_final || '-'}</td>
                         <td style="border: 1px solid #ddd; padding: 6px;">${registro.observacoes || '-'}</td>
                         <td style="border: 1px solid #ddd; padding: 6px;">
-                            <span style="background: ${registro.dadosFinais.km ? '#e8f5e8' : '#d1fae5'}; color: ${registro.dadosFinais.km ? '#2e7d32' : '#065f46'}; padding: 3px 6px; border-radius: 3px; font-size: 7px; display: inline-block;">
-                                ${registro.dadosFinais.km ? 'Finalizada' : 'Em Andamento'}
+                            <span style="background: ${registro.km_final ? '#e8f5e8' : '#d1fae5'}; color: ${registro.km_final ? '#2e7d32' : '#065f46'}; padding: 3px 6px; border-radius: 3px; font-size: 7px; display: inline-block;">
+                                ${registro.km_final ? 'Finalizada' : 'Em Andamento'}
                             </span>
                         </td>
                     </tr>
@@ -4226,19 +4174,19 @@ class FrotaSystem {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
                         <div style="background: #e8f5e8; padding: 10px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 12px; color: #666;">Viaturas Ativas</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">${this.obterViaturasAtivasHoje().length}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #2e7d32;">${(await this.obterViaturasAtivasHoje()).length}</div>
                         </div>
                         <div style="background: #fee2e2; padding: 10px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 12px; color: #666;">Não Ativadas</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #991b1b;">${this.obterViaturasNaoAtivadasHoje().length}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #991b1b;">${(await this.obterViaturasNaoAtivadasHoje()).length}</div>
                         </div>
                         <div style="background: #e0e7ff; padding: 10px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 12px; color: #666;">Em Andamento</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #3730a3;">${registrosFiltrados.filter(r => !r.dadosFinais.km).length}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #3730a3;">${registrosFiltrados.filter(r => !r.km_final).length}</div>
                         </div>
                         <div style="background: #d1fae5; padding: 10px; border-radius: 6px; text-align: center;">
                             <div style="font-size: 12px; color: #666;">Finalizadas</div>
-                            <div style="font-size: 24px; font-weight: bold; color: #065f46;">${registrosFiltrados.filter(r => r.dadosFinais.km).length}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #065f46;">${registrosFiltrados.filter(r => r.km_final).length}</div>
                         </div>
                     </div>
                 </div>
@@ -4328,53 +4276,55 @@ class FrotaSystem {
         
         alert('Relatório exportado para Excel!');
     }
-	
-	// FUNÇÃO: Obter viaturas ativas hoje
-	obterViaturasAtivasHoje() {
-		const hoje = new Date().toISOString().split('T')[0];
-		return this.registrosUso.filter(registro => 
-			registro.dadosIniciais.data === hoje && !registro.dadosFinais.km
-		);
-	}
 
-	// FUNÇÃO: Obter viaturas não ativadas hoje
-	obterViaturasNaoAtivadasHoje() {
-		const hoje = new Date().toISOString().split('T')[0];
-		const viaturasAtivas = this.obterViaturasAtivasHoje().map(v => v.viatura.patrimonio);
-		return this.viaturas.filter(viatura => 
-			viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.patrimonio)
-		);
-	}
+    // FUNÇÃO MODIFICADA: Obter viaturas não ativadas hoje
+    async obterViaturasNaoAtivadasHoje() {
+        const hoje = new Date().toISOString().split('T')[0];
+        const viaturasAtivas = (await this.obterViaturasAtivasHoje()).map(v => v.viatura_id);
+        return this.viaturas.filter(viatura => 
+            viatura.status === 'ATIVA' && !viaturasAtivas.includes(viatura.id)
+        );
+    }
 
-	// FUNÇÃO: Obter nome de guerra pela matrícula
-	obterNomeGuerra(matricula) {
-		if (!matricula) return 'N/E';
-		
-		// Buscar na lista de motoristas do sistema de frota
-		const motorista = this.motoristas.find(m => m.matricula === matricula);
-		if (motorista && motorista.nomeGuerra) {
-			return motorista.nomeGuerra;
-		}
-		
-		// Buscar no sistema de autenticação
-		const user = auth.users.find(u => u.matricula === matricula);
-		if (user && user.nomeGuerra) {
-			return user.nomeGuerra;
-		}
-		
-		// Fallback: buscar nome completo no registro de uso
-		const registroUso = this.registrosUso.find(r => r.motorista.matricula === matricula);
-		if (registroUso && registroUso.motorista.nome) {
-			return registroUso.motorista.nome.split(' ')[0];
-		}
-		
-		// Fallback final
-		if (user && user.nome) {
-			return user.nome.split(' ')[0];
-		}
-		
-		return 'N/E';
-	}
+    // FUNÇÃO MODIFICADA: Obter nome de guerra pela matrícula
+    obterNomeGuerra(matricula) {
+        if (!matricula) return 'N/E';
+        
+        // Buscar na lista de motoristas do sistema de frota
+        const motorista = this.motoristas.find(m => m.matricula === matricula);
+        if (motorista && motorista.nome_guerra) {
+            return motorista.nome_guerra;
+        }
+        
+        // Buscar no sistema de autenticação
+        const user = auth.users.find(u => u.matricula === matricula);
+        if (user && user.nomeGuerra) {
+            return user.nomeGuerra;
+        }
+        
+        // Fallback: buscar nome completo no registro de uso
+        const registroUso = this.registrosUso.find(r => r.motorista?.matricula === matricula);
+        if (registroUso && registroUso.motorista?.nome) {
+            return registroUso.motorista.nome.split(' ')[0];
+        }
+        
+        // Fallback final
+        if (user && user.nome) {
+            return user.nome.split(' ')[0];
+        }
+        
+        return 'N/E';
+    }
+
+    // FUNÇÃO: Finalizar empréstimo (placeholder)
+    async finalizarEmprestimo(id) {
+        alert('Funcionalidade de finalizar empréstimo em desenvolvimento');
+    }
+
+    // FUNÇÃO: Exportar relatório de avarias (placeholder)
+    async exportarRelatorioAvarias(tipo) {
+        alert('Funcionalidade de exportar relatório de avarias em desenvolvimento');
+    }
 }
 
 // Inicializar sistema quando a página carregar
