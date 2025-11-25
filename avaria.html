@@ -1,4 +1,4 @@
-<div class="page-content fade-in">
+﻿<div class="page-content fade-in">
     <div class="form-section">
         <h2>⚠️ Comunicação de Avaria</h2>
         
@@ -9,16 +9,16 @@
         
         <form id="avariaForm">
             <div class="form-grid">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="avariaData">Data da Verificação</label>
-                        <input type="date" id="avariaData" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="avariaTipoViatura">Tipo de Viatura</label>
-                        <input type="text" id="avariaTipoViatura" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
-                    </div>
-                </div>
+				<div class="form-row">
+					<div class="form-group">
+						<label for="avariaData">Data da Verificação</label>
+						<input type="date" id="avariaData" required>
+					</div>
+					<div class="form-group">
+						<label for="avariaTipoViatura">Modelo/Viatura</label>
+						<input type="text" id="avariaTipoViatura" required placeholder="Ex: XR300, Parati, Fox, Amarok...">
+					</div>
+				</div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -60,8 +60,8 @@
                 <div class="assinatura-section">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="avariaAssinatura">Assinatura</label>
-                            <input type="text" id="avariaAssinatura" required placeholder="Seu nome de guerra para assinatura">
+                            <label for="avariaAssinatura">Assinatura (Nome Completo)</label>
+                            <input type="text" id="avariaAssinatura" required placeholder="Seu nome completo para assinatura" readonly>
                         </div>
                     </div>
                     
@@ -75,7 +75,7 @@
                             <input type="text" id="avariaMatricula" readonly>
                         </div>
                         <div class="form-group">
-                            <label for="avariaNome">Nome Completo</label>
+                            <label for="avariaNome">Nome de Guerra</label>
                             <input type="text" id="avariaNome" readonly>
                         </div>
                     </div>
@@ -143,8 +143,9 @@
             if (user) {
                 document.getElementById('avariaGrad').value = user.graduacao || '';
                 document.getElementById('avariaMatricula').value = user.matricula || '';
-                document.getElementById('avariaNome').value = user.nome || '';
-                document.getElementById('avariaAssinatura').value = user.nomeGuerra || user.nome || '';
+                document.getElementById('avariaNome').value = user.nomeGuerra || '';
+                // CORREÇÃO: Assinatura deve ser o NOME COMPLETO
+                document.getElementById('avariaAssinatura').value = user.nome || '';
             }
         }
     });

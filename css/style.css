@@ -78,7 +78,7 @@ body {
     padding: 0.5rem;
 }
 
-/* Navega√ß√£o responsiva */
+/* NavegaÁ„o responsiva */
 .main-nav {
     background: var(--surface);
     border-bottom: 1px solid #e1e5e9;
@@ -123,7 +123,7 @@ body {
     background: rgba(30, 60, 114, 0.05);
 }
 
-/* Conte√∫do principal */
+/* Conte˙do principal */
 .main-content {
     max-width: 1200px;
     margin: 0 auto;
@@ -131,7 +131,7 @@ body {
     min-height: calc(100vh - 200px);
 }
 
-/* Se√ß√µes de formul√°rio */
+/* SeÁıes de formul·rio */
 .form-section {
     background: var(--surface);
     padding: 2rem;
@@ -149,7 +149,7 @@ body {
     border-bottom: 2px solid #f0f0f0;
 }
 
-/* Grid responsivo para formul√°rios */
+/* Grid responsivo para formul·rios */
 .form-grid {
     display: grid;
     gap: 1.5rem;
@@ -198,7 +198,7 @@ body {
     font-family: inherit;
 }
 
-/* Bot√µes */
+/* Botıes */
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: white;
@@ -444,7 +444,7 @@ body {
         margin-bottom: 0.5rem;
     }
 
-    /* Ajustes espec√≠ficos para formul√°rios em mobile */
+    /* Ajustes especÌficos para formul·rios em mobile */
     .form-grid {
         gap: 1rem;
     }
@@ -527,7 +527,7 @@ body {
     }
 }
 
-/* Anima√ß√µes suaves */
+/* AnimaÁıes suaves */
 .fade-in {
     animation: fadeIn 0.5s ease-in;
 }
@@ -546,7 +546,7 @@ body {
     }
 }
 
-/* Foco vis√≠vel para teclado */
+/* Foco visÌvel para teclado */
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -555,9 +555,9 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* Estilos espec√≠ficos para p√°ginas */
+/* Estilos especÌficos para p·ginas */
 
-/* P√°gina de Abastecimento */
+/* P·gina de Abastecimento */
 .saldo-disponivel {
     background-color: #f0f9ff !important;
     border-color: #0ea5e9 !important;
@@ -565,7 +565,7 @@ textarea:focus-visible {
     font-weight: 600;
 }
 
-/* P√°gina de Avaria */
+/* P·gina de Avaria */
 .comunicado-header {
     background: #f8f9fa;
     padding: 1rem;
@@ -609,12 +609,12 @@ textarea:focus-visible {
     margin-top: 1rem;
 }
 
-/* √çcones nos bot√µes */
+/* Õcones nos botıes */
 .btn-icon {
     margin-right: 0.5rem;
 }
 
-/* Tabelas com a√ß√µes */
+/* Tabelas com aÁıes */
 .table-actions {
     display: flex;
     gap: 1rem;
@@ -637,7 +637,7 @@ textarea:focus-visible {
     background: white;
 }
 
-/* A√ß√µes nas tabelas */
+/* AÁıes nas tabelas */
 .btn-action {
     padding: 0.25rem 0.5rem;
     border: none;
@@ -705,12 +705,12 @@ textarea:focus-visible {
     grid-column: 1 / -1;
 }
 
-/* M√°scaras de entrada */
+/* M·scaras de entrada */
 .cpf-mask, .phone-mask, .placa-mask {
     text-transform: uppercase;
 }
 
-/* Responsividade para p√°ginas espec√≠ficas */
+/* Responsividade para p·ginas especÌficas */
 @media (max-width: 768px) {
     .avaria-item {
         flex-direction: column;
@@ -731,7 +731,7 @@ textarea:focus-visible {
     }
 }
 
-/* Anima√ß√µes de transi√ß√£o de p√°gina */
+/* AnimaÁıes de transiÁ„o de p·gina */
 .page-content {
     animation: slideIn 0.3s ease-out;
 }
@@ -747,7 +747,7 @@ textarea:focus-visible {
     }
 }
 
-/* Estilos espec√≠ficos para Comunica√ß√£o de Viatura */
+/* Estilos especÌficos para ComunicaÁ„o de Viatura */
 .comunicacao-container {
     max-width: 800px;
     margin: 20px auto;
@@ -785,7 +785,7 @@ textarea:focus-visible {
     box-shadow: none !important;
 }
 
-/* Estilos para a p√°gina de Viaturas Ativas */
+/* Estilos para a p·gina de Viaturas Ativas */
 .filtros-container {
     background: #f8f9fa;
     padding: 1.5rem;
@@ -806,7 +806,7 @@ textarea:focus-visible {
     margin-bottom: 0;
 }
 
-/* Bot√µes de exporta√ß√£o em linha */
+/* Botıes de exportaÁ„o em linha */
 .export-buttons {
     display: flex;
     gap: 0.5rem;
@@ -901,12 +901,12 @@ textarea:focus-visible {
     max-width: 90px;
 }
 
-.data-table-optimized th:nth-child(2),  /* COLUNA HORA SA√çDA */
+.data-table-optimized th:nth-child(2),  /* COLUNA HORA SAÕDA */
 .data-table-optimized td:nth-child(2) {
-    width: 70px;       /* ‚Üê REDUZIDO DE 130px PARA 70px */
-    min-width: 70px;   /* ‚Üê REDUZIDO DE 130px PARA 70px */
-    max-width: 70px;   /* ‚Üê REDUZIDO DE 130px PARA 70px */
-    padding: 8px 4px;  /* ‚Üê REDUZINDO PADDING LATERAL */
+    width: 70px;       /* ? REDUZIDO DE 130px PARA 70px */
+    min-width: 70px;   /* ? REDUZIDO DE 130px PARA 70px */
+    max-width: 70px;   /* ? REDUZIDO DE 130px PARA 70px */
+    padding: 8px 4px;  /* ? REDUZINDO PADDING LATERAL */
 }
 
 .data-table-optimized th:nth-child(3),  /* COLUNA VIATURA */
@@ -914,18 +914,18 @@ textarea:focus-visible {
     width: 150px;
     min-width: 150px;
     max-width: 150px;
-    padding-left: 2px;  /* ‚Üê ESPA√áAMENTO ESQUERDO M√çNIMO */
+    padding-left: 2px;  /* ? ESPA«AMENTO ESQUERDO MÕNIMO */
 }
 
 .data-table-optimized th:nth-child(4),  /* COLUNA MOTORISTA */
 .data-table-optimized td:nth-child(4) {
-    width: 150px;       /* ‚Üê 50% MAIS LARGA */
+    width: 150px;       /* ? 50% MAIS LARGA */
     min-width: 150px;
     max-width: 150px;
     padding-right: 10px;
 }
 
-.data-table-optimized th:nth-child(5),  /* COLUNA MATR√çCULA */
+.data-table-optimized th:nth-child(5),  /* COLUNA MATRÕCULA */
 .data-table-optimized td:nth-child(5) {
     width: 100px;
     min-width: 100px;
@@ -943,12 +943,12 @@ textarea:focus-visible {
     line-height: 1.2;
 }
 
-.data-table-optimized th:nth-child(7),	/*COLUNA Emprego Miss√£o */
+.data-table-optimized th:nth-child(7),	/*COLUNA Emprego Miss„o */
 .data-table-optimized td:nth-child(7) {
     width: 200px;
     min-width: 200px;
     max-width: 200px;
-	padding-left: 2px;  /* ‚Üê ESPA√áAMENTO ESQUERDO M√çNIMO */
+	padding-left: 2px;  /* ? ESPA«AMENTO ESQUERDO MÕNIMO */
 }
 
 .data-table-optimized th:nth-child(8),	/*COLUNA KM INICIAL */
@@ -990,7 +990,7 @@ textarea:focus-visible {
 
 /* Indicador de scroll */
 .table-container-optimized::after {
-    content: "‚áÑ";
+    content: "?";
     position: absolute;
     right: 5px;
     top: 50%;
@@ -1017,11 +1017,11 @@ textarea:focus-visible {
     z-index: 1000;
 }
 
-/* Cabe√ßalhos abreviados para mobile */
+/* CabeÁalhos abreviados para mobile */
 @media (max-width: 768px) {
     .data-table-optimized th:nth-child(3)::before { content: "Mot.: "; }
     .data-table-optimized th:nth-child(4)::before { content: "Mat.: "; }
-    .data-table-optimized th:nth-child(6)::before { content: "Miss√£o: "; }
+    .data-table-optimized th:nth-child(6)::before { content: "Miss„o: "; }
     .data-table-optimized th:nth-child(7)::before { content: "Hora: "; }
     .data-table-optimized th:nth-child(8)::before { content: "KM: "; }
     
@@ -1098,7 +1098,7 @@ textarea:focus-visible {
     color: #2e7d32;
 }
 
-/* Info card para tempo de edi√ß√£o */
+/* Info card para tempo de ediÁ„o */
 .info-card {
     background: #f0f9ff;
     border: 1px solid #0ea5e9;
@@ -1198,14 +1198,14 @@ textarea:focus-visible {
     white-space: pre-wrap;
 }
 
-/* Estilos espec√≠ficos para a p√°gina de avarias */
+/* Estilos especÌficos para a p·gina de avarias */
 .avarias-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
 
-/* Bot√µes de a√ß√£o para avarias */
+/* Botıes de aÁ„o para avarias */
 .btn-action-small {
     padding: 2px 6px;
     border: none;
@@ -1215,7 +1215,7 @@ textarea:focus-visible {
     margin: 0 1px;
 }
 
-/* Status espec√≠ficos para avarias */
+/* Status especÌficos para avarias */
 .status-pendente {
     background: #e0e7ff;
     color: #3730a3;
@@ -1329,3 +1329,1021 @@ textarea:focus-visible {
     font-weight: 600;
     margin: 0;
 }
+/* ===== LAYOUT MOBILE OTIMIZADO ===== */
+@media (max-width: 768px) {
+    .header-content {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .logo-section {
+        order: 1;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .logo-section h1 {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .logo-section img {
+        width: 20% !important;
+        height: 20% !important;
+    }
+
+    .user-info {
+        order: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .mobile-user-actions {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .mobile-user-actions .btn-secondary {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+
+    #userName {
+        order: 3;
+        width: 100%;
+        text-align: right;
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 0.25rem 0;
+    }
+
+    .mobile-menu-btn {
+        display: block;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: white;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    /* Ajuste no menu principal */
+    .main-nav {
+        top: 0;
+    }
+
+    .nav-container {
+        padding: 0;
+    }
+
+    .nav-menu-wrapper {
+        width: 100%;
+    }
+
+    .nav-menu {
+        display: none;
+        flex-direction: column;
+        background: var(--surface);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-menu.active {
+        display: flex;
+    }
+
+    .nav-link {
+        padding: 1rem;
+        border-bottom: 1px solid #e1e5e9;
+        border-left: 4px solid transparent;
+    }
+
+    .nav-link.active {
+        border-left-color: var(--primary-color);
+        border-bottom-color: #e1e5e9;
+    }
+
+    /* Ajuste no conte˙do principal */
+    .main-content {
+        padding: 1rem 0.5rem;
+        margin-top: 0;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .card h3 {
+        font-size: 1rem;
+    }
+
+    .card p {
+        font-size: 0.8rem;
+    }
+}
+
+/* Melhorias para telas muito pequenas */
+@media (max-width: 480px) {
+    .header-content {
+        padding: 0.5rem;
+    }
+
+    .logo-section h1 {
+        font-size: 0.9rem;
+    }
+
+    .mobile-user-actions .btn-secondary {
+        padding: 6px 10px;
+        font-size: 0.7rem;
+    }
+
+    #userName {
+        font-size: 0.8rem;
+    }
+
+    .mobile-menu-btn {
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 1.25rem;
+    }
+
+    .cards-grid {
+        gap: 0.75rem;
+    }
+
+    .card {
+        padding: 0.75rem;
+    }
+}
+
+/* Garantir que o menu mobile funcione corretamente */
+.nav-menu-wrapper {
+    position: relative;
+}
+
+/* Ajuste para quando o menu estiver aberto */
+body.menu-open {
+    overflow: hidden;
+}
+
+.menu-open .nav-menu {
+    display: flex;
+}
+
+/* ===== LAYOUT MOBILE OTIMIZADO ===== */
+@media (max-width: 768px) {
+    /* Header compacto e organizado */
+    .header {
+        padding: 0.5rem;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        height: auto;
+        min-height: auto;
+    }
+
+    .header-content {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .mobile-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .mobile-header-bottom {
+        width: 100%;
+    }
+
+    .logo-section {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+    }
+
+    .logo-mobile {
+        width: 35px !important;
+        height: 35px !important;
+        object-fit: contain;
+    }
+
+    .title-mobile {
+        font-size: 0.9rem !important;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .user-name-mobile {
+        font-size: 0.8rem;
+        font-weight: 500;
+        flex: 1;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .btn-small {
+        padding: 6px 10px !important;
+        font-size: 0.75rem !important;
+        white-space: nowrap;
+    }
+
+    /* Menu mobile melhorado */
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .mobile-menu-btn.active {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Menu de navegaÁ„o otimizado */
+    .main-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 999;
+        display: none;
+        padding-top: 80px; /* Altura do header */
+    }
+
+    .main-nav.active {
+        display: block;
+    }
+
+    .nav-container {
+        height: 100%;
+        padding: 0;
+    }
+
+    .nav-menu-wrapper {
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .nav-menu {
+        display: flex;
+        flex-direction: column;
+        background: var(--surface);
+        margin: 0;
+        padding: 1rem 0;
+        height: auto;
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+
+    .nav-menu li {
+        width: 100%;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e1e5e9;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+        background: rgba(30, 60, 114, 0.1);
+        border-left: 4px solid var(--primary-color);
+        border-bottom-color: #e1e5e9;
+    }
+
+    /* Conte˙do principal */
+    .main-content {
+        margin-top: 100px; /* Compensar header fixo */
+        padding: 1rem;
+        min-height: calc(100vh - 150px);
+    }
+
+    .mobile-welcome {
+        text-align: center;
+        padding: 2rem 1rem;
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1rem;
+    }
+
+    .mobile-welcome h2 {
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        font-size: 1.2rem;
+    }
+
+    .mobile-welcome p {
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    /* Ocultar cards em mobile */
+    .mobile-cards {
+        display: none !important;
+    }
+
+    /* Melhorias para formul·rios em mobile */
+    .form-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-section h2 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-grid {
+        gap: 1rem;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* Botıes full width em mobile */
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        margin-bottom: 0.5rem;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+    }
+
+    /* Tabelas responsivas */
+    .table-container {
+        font-size: 0.8rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.5rem;
+    }
+
+    /* Footer compacto */
+    .footer {
+        padding: 1rem;
+        margin-top: 2rem;
+        font-size: 0.7rem;
+    }
+
+    .footer p {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Melhorias para telas muito pequenas */
+@media (max-width: 480px) {
+    .header {
+        padding: 0.4rem;
+    }
+
+    .logo-mobile {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .title-mobile {
+        font-size: 0.8rem !important;
+    }
+
+    .user-name-mobile {
+        font-size: 0.75rem;
+    }
+
+    .btn-small {
+        padding: 5px 8px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .mobile-menu-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .main-content {
+        margin-top: 90px;
+        padding: 0.75rem;
+    }
+
+    .mobile-welcome {
+        padding: 1.5rem 0.75rem;
+    }
+
+    .mobile-welcome h2 {
+        font-size: 1.1rem;
+    }
+
+    .form-section {
+        padding: 0.75rem;
+    }
+
+    .nav-link {
+        padding: 0.875rem 1.25rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* AnimaÁıes suaves para transiÁıes de p·gina */
+.page-transition {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scrollbar personalizada para menu mobile */
+.nav-menu-wrapper::-webkit-scrollbar {
+    width: 4px;
+}
+
+.nav-menu-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.nav-menu-wrapper::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+/* Estados de loading para mobile */
+.loading-mobile {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.loading-mobile .loading {
+    width: 25px;
+    height: 25px;
+}
+
+/* Melhorias de acessibilidade para mobile */
+@media (max-width: 768px) {
+    button:focus-visible,
+    .nav-link:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+    }
+}
+
+/* Ajustes para orientaÁ„o landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .main-nav {
+        padding-top: 70px;
+    }
+
+    .nav-menu {
+        max-height: calc(100vh - 80px);
+    }
+
+    .nav-link {
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+/* Dark mode para mobile */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+    .nav-menu {
+        background: #2d2d2d;
+    }
+
+    .nav-link {
+        border-bottom-color: #404040;
+    }
+
+    .mobile-welcome {
+        background: #2d2d2d;
+    }
+}
+
+/* ===== MATERIAL DESIGN MINIMALISTA ===== */
+
+/* Vari·veis atualizadas */
+:root {
+    --primary-color: #1976d2;
+    --primary-dark: #1565c0;
+    --primary-light: #42a5f5;
+    --secondary-color: #dc004e;
+    --surface: #ffffff;
+    --background: #fafafa;
+    --on-surface: #212121;
+    --on-primary: #ffffff;
+    --shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    --shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+    --shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+    --border-radius: 8px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header minimalista */
+.header {
+    background: var(--surface);
+    color: var(--on-surface);
+    box-shadow: var(--shadow-1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 1rem 0;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-section h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--on-surface);
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+/* Container principal */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+/* Grid de aÁıes */
+.actions-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+/* Cards de aÁ„o */
+.action-card {
+    background: var(--surface);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: var(--shadow-1);
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 140px;
+    justify-content: center;
+}
+
+.action-card:hover {
+    box-shadow: var(--shadow-2);
+    transform: translateY(-2px);
+    border-color: var(--primary-light);
+}
+
+.action-card:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-1);
+}
+
+.action-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(25, 118, 210, 0.08);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.action-icon .material-icons {
+    font-size: 24px;
+}
+
+.action-card h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--on-surface);
+    margin: 0 0 4px 0;
+}
+
+.action-card p {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+
+/* Mobile - Botıes pequenos em grid compacto */
+@media (max-width: 768px) {
+    .header-content {
+        padding: 12px 16px;
+    }
+
+    .logo-section h1 {
+        font-size: 1.1rem;
+    }
+
+    .dashboard-container {
+        padding: 16px 12px;
+    }
+
+    .actions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+
+    .action-card {
+        padding: 16px 12px;
+        min-height: 100px;
+    }
+
+    .action-icon {
+        width: 36px;
+        height: 36px;
+        margin-bottom: 8px;
+    }
+
+    .action-icon .material-icons {
+        font-size: 18px;
+    }
+
+    .action-card h3 {
+        font-size: 0.875rem;
+        margin-bottom: 2px;
+    }
+
+    .action-card p {
+        font-size: 0.75rem;
+        line-height: 1.3;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .actions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+/* Desktop grande */
+@media (min-width: 1025px) {
+    .actions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+}
+
+/* AnimaÁıes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.action-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.action-card:nth-child(1) { animation-delay: 0.1s; }
+.action-card:nth-child(2) { animation-delay: 0.2s; }
+.action-card:nth-child(3) { animation-delay: 0.3s; }
+.action-card:nth-child(4) { animation-delay: 0.4s; }
+.action-card:nth-child(5) { animation-delay: 0.5s; }
+.action-card:nth-child(6) { animation-delay: 0.6s; }
+.action-card:nth-child(7) { animation-delay: 0.7s; }
+.action-card:nth-child(8) { animation-delay: 0.8s; }
+
+/* ===== AJUSTES SOLICITADOS PARA O HEADER ===== */
+
+/* Desktop - Esconder bot„o Home e ajustar layout */
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    /* Garantir que userName venha primeiro no fluxo */
+    .user-info #userName {
+        order: 1;
+    }
+    
+    .user-info #logoutBtn {
+        order: 2;
+    }
+}
+
+/* Mobile - Centralizar bot„o Home e reduzir altura */
+@media (max-width: 768px) {
+    .mobile-only {
+        display: inline-flex !important;
+    }
+    
+    /* Header mais compacto no mobile */
+    .header {
+        padding: 0.5rem 0;
+        min-height: auto;
+    }
+    
+    .header-content {
+        padding: 0 0.5rem;
+    }
+    
+    /* Centralizar bot„o Home */
+    #homeBtn {
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    #homeBtn .material-icons {
+        font-size: 1rem;
+    }
+    
+    /* Ajustar user-info para layout em coluna */
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.25rem;
+    }
+    
+    /* Centralizar nome do usu·rio */
+    #userName {
+        text-align: center;
+        font-weight: 600;
+        padding: 0.25rem 0;
+    }
+    
+    /* Bot„o Sair ocupando largura total */
+    #logoutBtn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Ajustes especÌficos para telas muito pequenas */
+@media (max-width: 480px) {
+    .header {
+        padding: 0.25rem 0;
+    }
+    
+    .logo-section h1 {
+        font-size: 0.9rem;
+    }
+    
+    #homeBtn,
+    #logoutBtn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    #userName {
+        font-size: 0.9rem;
+    }
+}
+
+.btn-danger {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* Estilos para tabela responsiva de avarias */
+.table-container-optimized {
+    width: 100%;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.data-table-optimized {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 800px; /* Largura mÌnima para evitar quebra em mobile */
+}
+
+.data-table-optimized th,
+.data-table-optimized td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.data-table-optimized th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #374151;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Ajustes especÌficos para mobile */
+@media (max-width: 768px) {
+    .table-container-optimized {
+        border: 1px solid #e5e7eb;
+    }
+    
+    .data-table-optimized {
+        min-width: 1000px; /* Aumenta a largura mÌnima para mobile */
+        font-size: 0.8rem;
+    }
+    
+    .data-table-optimized th,
+    .data-table-optimized td {
+        padding: 0.5rem;
+        max-width: 150px;
+    }
+    
+    /* Garantir que os cabeÁalhos mantenham o texto correto */
+    .data-table-optimized th {
+        font-size: 0.75rem;
+        white-space: normal;
+        line-height: 1.2;
+    }
+}
+
+/* Status badges compactos para tabela */
+.status-badge-compact {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+}
+
+.status-pendente { background: #fee2e2; color: #991b1b; }
+.status-manutencao { background: #fef3c7; color: #92400e; }
+.status-ativo { background: #d1fae5; color: #065f46; }
+.status-nao-ativada { background: #f3f4f6; color: #6b7280; }
+
+/* Botıes de aÁ„o na tabela */
+.btn-action {
+    padding: 0.375rem 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+}
+
+.btn-view { background: #dbeafe; color: #1e40af; }
+.btn-edit { background: #fef3c7; color: #92400e; }
+.btn-delete { background: #fee2e2; color: #dc2626; }
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Ajustes para mobile */
+@media (max-width: 768px) {
+    .btn-action {
+        padding: 0.25rem 0.375rem;
+        min-width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+    }
+}
+

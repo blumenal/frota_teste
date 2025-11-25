@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Meta tags para prevenir cache -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Login - Sistema de Frota PM</title>
-    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- CSS com parâmetro de versão para evitar cache -->
+    <link rel="stylesheet" href="css/style.css?v=2.0.1">
     <style>
         .login-container {
             max-width: 400px;
@@ -148,7 +154,7 @@
         <div class="login-header">
             <div style="display: flex; justify-content: center;">
                 <div class="logo">
-                    <img src="assets/logo-pm.png" alt="PM" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img src="assets/logo-pm.png?v=2.0.1" alt="PM" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
             </div>
             <h1>Gerenciamento de Frota</h1>
@@ -178,10 +184,53 @@
         <div class="login-footer">
             <p>Desenvolvido para Dinter-I/4° BPM</p>
             <p>Caruaru - PE</p>
-			<p>- Versão 1.0 - InfoBlu Soluções</p>
+			<p>- Versão 2.0.1 -</p>
         </div>
     </div>
 
-    <script src="js/auth.js"></script>
+    <!-- JavaScript com parâmetro de versão para evitar cache -->
+    <script src="js/auth.js?v=2.0.1"></script>
+    
+    <script>
+        // Função para prevenir cache
+        function preventCaching() {
+            // Adiciona timestamp aos requests de recursos
+            document.addEventListener('DOMContentLoaded', function() {
+                const links = document.querySelectorAll('link[rel="stylesheet"]');
+                const scripts = document.querySelectorAll('script[src]');
+                const timestamp = new Date().getTime();
+                
+                links.forEach(link => {
+                    if (!link.href.includes('?')) {
+                        link.href = link.href + '?v=' + timestamp;
+                    }
+                });
+                
+                scripts.forEach(script => {
+                    if (!script.src.includes('?')) {
+                        script.src = script.src + '?v=' + timestamp;
+                    }
+                });
+            });
+            
+            // Intercepta requests para adicionar headers anti-cache
+            if (window.fetch) {
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    if (args[1]) {
+                        args[1].headers = {
+                            ...args[1].headers,
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        };
+                    }
+                    return originalFetch.apply(this, args);
+                };
+            }
+        }
+        
+        // Executa a prevenção de cache
+        preventCaching();
+    </script>
 </body>
 </html>

@@ -3,83 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Meta tags para prevenir cache -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Dashboard - Sistema de Frota</title>
-    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- CSS com parâmetro de versão para evitar cache -->
+    <link rel="stylesheet" href="css/style.css?v=2.0.1">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Ajuste inline para o ícone do botão Home ficar alinhado */
+        #homeBtn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        #homeBtn .material-icons {
+            font-size: 1.1rem;
+        }
+        
+        /* ESTILOS CORRIGIDOS - NOME DO USUÁRIO PRIMEIRO */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            order: 2; /* Garante que fique à direita */
+        }
+        
+        .user-name {
+            font-weight: 600;
+            margin-right: 0.5rem;
+            order: 1; /* NOME PRIMEIRO */
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 0.5rem;
+            order: 2; /* BOTÕES DEPOIS */
+        }
+        
+        /* Ajustes para mobile */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.5rem 1rem;
+                min-height: auto;
+            }
+            
+            .header-content {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .logo-section {
+                flex: 1;
+                min-width: 0;
+                order: 1;
+            }
+            
+            .logo-section h1 {
+                font-size: 1rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+                order: 2;
+            }
+            
+            .user-name {
+                font-size: 0.9rem;
+                margin-right: 0;
+                order: 1; /* NOME PRIMEIRO NO MOBILE TAMBÉM */
+            }
+            
+            .header-buttons {
+                gap: 0.25rem;
+                order: 2; /* BOTÕES DEPOIS NO MOBILE */
+            }
+            
+            .btn-secondary {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+            
+            #homeBtn {
+                justify-content: center;
+                min-width: 60px;
+            }
+            
+            #homeBtn .btn-text {
+                display: none;
+            }
+            
+            #homeBtn .material-icons {
+                margin-right: 0;
+            }
+        }
+        
+        /* Ajustes para telas muito pequenas */
+        @media (max-width: 480px) {
+            .header {
+                padding: 0.4rem 0.8rem;
+            }
+            
+            .logo-section h1 {
+                font-size: 0.9rem;
+            }
+            
+            .user-name {
+                font-size: 0.8rem;
+            }
+            
+            .btn-secondary {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <header class="header">
         <div class="header-content">
             <div class="logo-section">
-                <img src="assets/logo-pm.png" alt="PM" style="width: 25%; height: 25%; object-fit: contain;">
+                <img src="assets/logo-pm.png?v=2.0.1" alt="PM" class="logo">
                 <h1>Sistema de Frota - PM</h1>
             </div>
+            <!-- CORREÇÃO: NOME DO USUÁRIO VEM PRIMEIRO DENTRO DO user-info -->
             <div class="user-info">
-                <button id="homeBtn" class="btn-secondary">🏠 Home</button>
-                <span id="userName">Usuário</span>
-                <button id="logoutBtn" class="btn-secondary">Sair</button>
+                <span id="userName" class="user-name">SD ADMIN</span>
+                <div class="header-buttons">
+                    <button id="homeBtn" class="btn-secondary">
+                        <span class="material-icons">home</span>
+                        <span class="btn-text">Home</span>
+                    </button>
+                    <button id="logoutBtn" class="btn-secondary">Sair</button>
+                </div>
             </div>
         </div>
     </header>
 
-    <nav class="main-nav">
-        <div class="nav-container">
-            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-            <div class="nav-menu-wrapper">
-                <ul class="nav-menu" id="navMenu">
-                    <li><a href="#" data-page="uso_viatura" class="nav-link active">🚗 Uso de Viatura</a></li>
-                    <li><a href="#" data-page="abastecimento" class="nav-link">⛽ Abastecimento</a></li>
-                    <li><a href="#" data-page="avaria" class="nav-link">🔧 Comunicação de Avaria</a></li>
-                    <li><a href="#" data-page="cadastro_motorista" class="nav-link admin-link" style="display: none;">👤 Cadastrar Motorista</a></li>
-                    <li><a href="#" data-page="cadastro_viatura" class="nav-link admin-link" style="display: none;">🚗 Cadastrar Viatura</a></li>
-                    <li><a href="#" data-page="emprestimo_viatura" class="nav-link admin-link" style="display: none;">📝 Empréstimo de Viatura</a></li>
-                    <li><a href="#" data-page="saldo_combustivel" class="nav-link admin-link" style="display: none;">⛽ Saldo de Combustível</a></li>
-                    <li><a href="#" data-page="viaturas_ativas" class="nav-link admin-link" style="display: none;">📊 Viaturas Ativas</a></li>
-					<li><a href="#" data-page="visualizar_avarias" class="nav-link admin-link" style="display: none;">⚠️ Visualizar Avarias</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
     <main class="main-content">
         <div id="contentArea">
-            <!-- Conteúdo será carregado dinamicamente -->
-            <div class="page-content fade-in">
-                <div class="cards-grid">
-                    <div class="card" onclick="frotaSystem.loadPage('uso_viatura')" style="cursor: pointer;">
-                        <h3>🚗 Uso de Viatura</h3>
+            <div class="dashboard-container">
+                <div class="actions-grid">
+                    <div class="action-card" onclick="frotaSystem.loadPage('uso_viatura')">
+                        <div class="action-icon">
+                            <span class="material-icons">directions_car</span>
+                        </div>
+                        <h3>Uso de Viatura</h3>
                         <p>Registrar uso de viaturas para missões</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('abastecimento')" style="cursor: pointer;">
-                        <h3>⛽ Abastecimento</h3>
+
+                    <div class="action-card" onclick="frotaSystem.loadPage('abastecimento')">
+                        <div class="action-icon">
+                            <span class="material-icons">local_gas_station</span>
+                        </div>
+                        <h3>Abastecimento</h3>
                         <p>Registrar abastecimentos das viaturas</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('avaria')" style="cursor: pointer;">
-                        <h3>🔧 Comunicação de Avaria</h3>
+
+                    <div class="action-card" onclick="frotaSystem.loadPage('avaria')">
+                        <div class="action-icon">
+                            <span class="material-icons">handyman</span>
+                        </div>
+                        <h3>Comunicação de Avaria</h3>
                         <p>Reportar problemas nas viaturas</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('cadastro_motorista')" style="cursor: pointer; display: none;" id="adminCard1">
-                        <h3>👤 Cadastrar Motorista</h3>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('cadastro_motorista')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">person_add</span>
+                        </div>
+                        <h3>Cadastrar Motorista</h3>
                         <p>Gerenciar cadastro de motoristas</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('cadastro_viatura')" style="cursor: pointer; display: none;" id="adminCard2">
-                        <h3>🚗 Cadastrar Viatura</h3>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('cadastro_viatura')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">add_circle</span>
+                        </div>
+                        <h3>Cadastrar Viatura</h3>
                         <p>Gerenciar cadastro de viaturas</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('emprestimo_viatura')" style="cursor: pointer; display: none;" id="adminCard3">
-                        <h3>📝 Empréstimo de Viatura</h3>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('emprestimo_viatura')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">swap_horiz</span>
+                        </div>
+                        <h3>Empréstimo de Viatura</h3>
                         <p>Gerenciar empréstimos para outras unidades</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('saldo_combustivel')" style="cursor: pointer; display: none;" id="adminCard4">
-                        <h3>⛽ Saldo de Combustível</h3>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('saldo_combustivel')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">oil_barrel</span>
+                        </div>
+                        <h3>Saldo de Combustível</h3>
                         <p>Gerenciar saldos das viaturas</p>
                     </div>
-                    <div class="card" onclick="frotaSystem.loadPage('viaturas_ativas')" style="cursor: pointer; display: none;" id="adminCard5">
-                        <h3>📊 Viaturas Ativas</h3>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('viaturas_ativas')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">analytics</span>
+                        </div>
+                        <h3>Viaturas Ativas</h3>
                         <p>Relatório de viaturas em uso</p>
                     </div>
-					<div class="card" onclick="frotaSystem.loadPage('visualizar_avarias')" style="cursor: pointer; display: none;" id="adminCard6">
-						<h3>⚠️ Visualizar Avarias</h3>
-						<p>Visualizar e gerenciar avarias reportadas</p>
+
+                    <div class="action-card admin-card" onclick="frotaSystem.loadPage('visualizar_avarias')" style="display: none;">
+                        <div class="action-icon">
+                            <span class="material-icons">warning</span>
+                        </div>
+                        <h3>Visualizar Avarias</h3>
+                        <p>Visualizar e gerenciar avarias reportadas</p>
+                    </div>
+					<div class="card" onclick="frotaSystem.loadPage('visualizar_abastecimentos')" style="cursor: pointer; display: none;" id="adminCard7">
+						<h3>⛽ Visualizar Abastecimentos</h3>
+						<p>Visualizar todos os abastecimentos do sistema</p>
 					</div>
                 </div>
             </div>
@@ -88,33 +232,109 @@
 
     <footer class="footer">
         <p>Secretaria de Defesa Social - Polícia Militar de Pernambuco</p>
-        <p>Dinter-I/4° BPM - Batalhão Barreto de Menezes</p>
+        <p>Dinter-I/4º BPM - Batalhão Barreto de Menezes</p>
         <p>BR 104, KM 067, Pinheirópolis - Caruaru - PE CEP 55.000-000</p>
         <p>Fone/fax (81) 3719.9110/9117 - E-mail: viaturas4bpm@hotmail.com</p>
-        <p>Versão 2.0 - Sistema de Gerenciamento de Frota</p>
+        <p>Versão 2.0.1 - Sistema de Gerenciamento de Frota</p>
     </footer>
 
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
+    <!-- JavaScript com parâmetro de versão para evitar cache -->
+    <script src="js/auth.js?v=2.0.1"></script>
+    <script src="js/app.js?v=2.0.1"></script>
+    
     <script>
+        // Função para prevenir cache
+        function preventCaching() {
+            // Adiciona timestamp aos requests de recursos
+            document.addEventListener('DOMContentLoaded', function() {
+                const links = document.querySelectorAll('link[rel="stylesheet"]');
+                const scripts = document.querySelectorAll('script[src]');
+                const images = document.querySelectorAll('img[src]');
+                const timestamp = new Date().getTime();
+                
+                links.forEach(link => {
+                    if (!link.href.includes('?')) {
+                        link.href = link.href + '?v=' + timestamp;
+                    }
+                });
+                
+                scripts.forEach(script => {
+                    if (!script.src.includes('?')) {
+                        script.src = script.src + '?v=' + timestamp;
+                    }
+                });
+                
+                images.forEach(img => {
+                    if (!img.src.includes('?')) {
+                        img.src = img.src + '?v=' + timestamp;
+                    }
+                });
+            });
+            
+            // Intercepta requests para adicionar headers anti-cache
+            if (window.fetch) {
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    if (args[1]) {
+                        args[1].headers = {
+                            ...args[1].headers,
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        };
+                    }
+                    return originalFetch.apply(this, args);
+                };
+            }
+            
+            // Força recarregamento da página se detectar versão antiga
+            const currentVersion = '2.0.1';
+            const storedVersion = localStorage.getItem('appVersion');
+            
+            if (storedVersion !== currentVersion) {
+                localStorage.setItem('appVersion', currentVersion);
+                // Se for uma versão diferente, força recarregamento sem cache
+                if (storedVersion && storedVersion !== currentVersion) {
+                    window.location.reload(true);
+                }
+            }
+        }
+        
+        // Executa a prevenção de cache
+        preventCaching();
+        
         // Botão Home
         document.getElementById('homeBtn')?.addEventListener('click', function() {
             location.reload();
         });
 
-        // Mostrar/ocultar menu admin baseado no tipo de usuário
+        // Mostrar/ocultar cards admin baseado no tipo de usuário
         document.addEventListener('DOMContentLoaded', function() {
-            const user = auth.getCurrentUser();
-            if (user && user.isAdmin) {
-                const adminLinks = document.querySelectorAll('.admin-link');
-                adminLinks.forEach(link => {
-                    link.style.display = 'block';
-                });
-                
-                const adminCards = ['adminCard1', 'adminCard2', 'adminCard3', 'adminCard4', 'adminCard5'];
-                adminCards.forEach(cardId => {
-                    const card = document.getElementById(cardId);
-                    if (card) card.style.display = 'block';
+            // Verificação de segurança simples para evitar erro caso auth não esteja carregado
+            if (typeof auth !== 'undefined') {
+                const user = auth.getCurrentUser();
+                if (user && user.isAdmin) {
+                    const adminCards = document.querySelectorAll('.admin-card');
+                    adminCards.forEach(card => {
+                        card.style.display = 'flex';
+                    });
+                    
+                    // Atualizar nome do usuário para SD ADMIN se for administrador
+                    if (document.getElementById('userName')) {
+                        document.getElementById('userName').textContent = 'SD ADMIN';
+                    }
+                }
+
+                // Atualizar nome do usuário
+                if (user && document.getElementById('userName')) {
+                    document.getElementById('userName').textContent = user.name || 'SD ADMIN';
+                }
+            }
+
+            // Logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (typeof auth !== 'undefined') auth.logout();
                 });
             }
         });

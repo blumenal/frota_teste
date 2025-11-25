@@ -1,8 +1,9 @@
-// Sistema de autenticaÃ§Ã£o melhorado
+// Sistema de autenticação integrado com API
 class AuthSystem {
     constructor() {
         this.currentUser = null;
         this.users = JSON.parse(localStorage.getItem('pm_users')) || [];
+        this.apiUrl = './api/api.php';
         this.initAdminUser();
     }
 
@@ -30,22 +31,118 @@ class AuthSystem {
         localStorage.setItem('pm_users', JSON.stringify(this.users));
     }
 
-	// Substituir a funÃ§Ã£o de login no auth.js
-	async function login(matricula, senha) {
+    // MÉTODO LOGIN CORRIGIDO - integrado com API
+	// MÉTODO LOGIN CORRIGIDO - integrado com API
+	async login(matricula, senha) {
 		try {
-			const user = await DataService.login({ matricula, senha });
+			console.log('?? Iniciando processo de login para:', matricula);
 			
-			if (user) {
-				localStorage.setItem('pm_currentUser', JSON.stringify(user));
-				window.location.href = 'dashboard.html';
-				return true;
+			// PRIMEIRO: Tentar login local (para admin)
+			const localUser = this.users.find(u => 
+				u.matricula === matricula && 
+				u.senha === senha && 
+				u.ativo !== false
+			);
+			
+			if (localUser) {
+				console.log('? Login local bem-sucedido');
+				this.currentUser = localUser;
+				localStorage.setItem('pm_currentUser', JSON.stringify(localUser));
+				this.registrarLogin(localUser);
+				return { success: true, user: localUser };
 			}
+			
+			// SEGUNDO: Tentar login via API (para outros usuários)
+			console.log('?? Tentando login via API...');
+			const apiUser = await this.loginViaAPI(matricula, senha);
+			
+			if (apiUser) {
+				console.log('? Login API bem-sucedido');
+				this.currentUser = apiUser;
+				localStorage.setItem('pm_currentUser', JSON.stringify(apiUser));
+				this.registrarLogin(apiUser);
+				return { success: true, user: apiUser };
+			}
+			
+			throw new Error('Matrícula ou senha incorretos');
+			
 		} catch (error) {
-			console.error('Erro no login:', error);
-			showLoginError(error.message || 'MatrÃ­cula ou senha incorretos');
-			return false;
+			console.error('? Erro no login:', error);
+			this.showLoginError(error.message);
+			return { success: false, error: error.message };
 		}
 	}
+
+	// Login via API - VERSÃO CORRIGIDA
+	async loginViaAPI(matricula, senha) {
+		try {
+			console.log('?? Tentando login via API para matrícula:', matricula);
+			
+			// Enviar matrícula e senha para o backend validar
+			const loginData = {
+				matricula: matricula,
+				senha: senha
+			};
+
+			const response = await fetch(this.apiUrl + '?action=login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(loginData)
+			});
+
+			// Verificar se a resposta é válida
+			if (!response.ok) {
+				throw new Error(`Erro HTTP: ${response.status}`);
+			}
+
+			const data = await response.json();
+			console.log('?? Resposta da API:', data);
+			
+			if (data.success && data.user) {
+				console.log('? Login bem-sucedido via API');
+				return this.formatUserFromAPI(data.user);
+			} else {
+				throw new Error(data.message || 'Credenciais inválidas');
+			}
+			
+		} catch (error) {
+			console.error('? Erro ao fazer login via API:', error);
+			throw error;
+		}
+	}
+
+    // Formatar usuário da API para o formato local
+	// Formatar usuário da API para o formato local - VERSÃO CORRIGIDA
+	formatUserFromAPI(apiUser) {
+		console.log('?? Formatando usuário da API:', apiUser);
+		
+		return {
+			id: apiUser.id,
+			nome: apiUser.nome_completo || apiUser.nome,
+			nomeGuerra: apiUser.nome_guerra,
+			graduacao: apiUser.graduacao,
+			matricula: apiUser.matricula,
+			senha: apiUser.senha, // Manter o hash (não usado para login)
+			cpf: apiUser.cpf,
+			telefone: apiUser.telefone,
+			email: apiUser.email,
+			codigoCondutor: apiUser.codigo_condutor,
+			isAdmin: apiUser.is_admin === 1 || apiUser.is_admin === true,
+			ativo: apiUser.status === 'ATIVO',
+			dataCadastro: apiUser.created_at
+		};
+	}
+
+    showLoginError(message) {
+        const errorElement = document.getElementById('loginError');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        console.error('Erro de login:', message);
+    }
 
     registrarLogin(user) {
         const logins = JSON.parse(localStorage.getItem('pm_login_logs')) || [];
@@ -57,7 +154,6 @@ class AuthSystem {
             userAgent: navigator.userAgent
         });
         
-        // Manter apenas os Ãºltimos 1000 logs
         if (logins.length > 1000) {
             logins.splice(0, logins.length - 1000);
         }
@@ -66,7 +162,6 @@ class AuthSystem {
     }
 
     logout() {
-        // Registrar logout
         if (this.currentUser) {
             const logins = JSON.parse(localStorage.getItem('pm_login_logs')) || [];
             const lastLogin = logins[logins.length - 1];
@@ -99,83 +194,17 @@ class AuthSystem {
         const user = this.getCurrentUser();
         return user && user.isAdmin;
     }
-
-    registerUser(userData) {
-        // Validar dados
-        if (!userData.matricula || !userData.senha || !userData.nome) {
-            return { success: false, message: 'Dados obrigatÃ³rios nÃ£o preenchidos' };
-        }
-
-        if (this.users.find(u => u.matricula === userData.matricula)) {
-            return { success: false, message: 'MatrÃ­cula jÃ¡ cadastrada' };
-        }
-
-        if (this.users.find(u => u.cpf === userData.cpf)) {
-            return { success: false, message: 'CPF jÃ¡ cadastrado' };
-        }
-
-        const newUser = {
-            id: Date.now(),
-            ...userData,
-            isAdmin: userData.isAdmin || false, // NOVO CAMPO PARA ADMINISTRADOR
-            ativo: true,
-            dataCadastro: new Date().toISOString()
-        };
-
-        this.users.push(newUser);
-        this.saveUsers();
-        
-        return { 
-            success: true, 
-            message: 'UsuÃ¡rio cadastrado com sucesso',
-            user: newUser
-        };
-    }
-
-    updateUser(userId, userData) {
-        const userIndex = this.users.findIndex(u => u.id === userId);
-        if (userIndex === -1) {
-            return { success: false, message: 'UsuÃ¡rio nÃ£o encontrado' };
-        }
-
-        this.users[userIndex] = { ...this.users[userIndex], ...userData };
-        this.saveUsers();
-        
-        // Atualizar usuÃ¡rio atual se for o mesmo
-        if (this.currentUser && this.currentUser.id === userId) {
-            this.currentUser = this.users[userIndex];
-            localStorage.setItem('pm_currentUser', JSON.stringify(this.currentUser));
-        }
-        
-        return { success: true, message: 'UsuÃ¡rio atualizado com sucesso' };
-    }
-
-    changePassword(userId, currentPassword, newPassword) {
-        const user = this.users.find(u => u.id === userId);
-        if (!user) {
-            return { success: false, message: 'UsuÃ¡rio nÃ£o encontrado' };
-        }
-
-        if (user.senha !== currentPassword) {
-            return { success: false, message: 'Senha atual incorreta' };
-        }
-
-        user.senha = newPassword;
-        this.saveUsers();
-        
-        return { success: true, message: 'Senha alterada com sucesso' };
-    }
 }
 
-// Inicializar sistema de autenticaÃ§Ã£o
+// Inicializar sistema de autenticação
 const auth = new AuthSystem();
 
-// Event listeners melhorados
+// Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // PÃ¡gina de login
+    // Página de login
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const matricula = document.getElementById('matricula').value.trim();
@@ -183,47 +212,60 @@ document.addEventListener('DOMContentLoaded', function() {
             const errorElement = document.getElementById('loginError');
             const submitBtn = loginForm.querySelector('button[type="submit"]');
             
+            // Validação básica
+            if (!matricula || !senha) {
+                showError('Preencha matrícula e senha');
+                return;
+            }
+            
             // Mostrar loading
             const originalText = submitBtn.textContent;
-            submitBtn.innerHTML = '<span class="loading"></span> Entrando...';
+            submitBtn.innerHTML = '<i class="loading"></i> Entrando...';
             submitBtn.disabled = true;
             
-            // Simular delay de rede
-            setTimeout(() => {
-                if (auth.login(matricula, senha)) {
+            // Limpar erro anterior
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            
+            try {
+                // Fazer login
+                const result = await auth.login(matricula, senha);
+                
+                if (result.success) {
                     // Login bem-sucedido
-                    submitBtn.textContent = 'âœ“ Login realizado!';
-                    submitBtn.style.background = 'var(--success)';
+                    submitBtn.textContent = '? Login realizado!';
+                    submitBtn.style.background = '#28a745';
                     
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
                 } else {
                     // Login falhou
-                    errorElement.style.display = 'block';
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
-                    
-                    // Animar o erro
-                    errorElement.style.animation = 'none';
-                    setTimeout(() => {
-                        errorElement.style.animation = 'fadeIn 0.3s ease';
-                    }, 10);
                 }
-            }, 800);
+            } catch (error) {
+                console.error('Erro no processo de login:', error);
+                showError('Erro inesperado no login');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
 
-        // Focar no campo de matrÃ­cula automaticamente
+        // Focar no campo de matrícula automaticamente
         document.getElementById('matricula')?.focus();
     }
 
-    // Verificar autenticaÃ§Ã£o em pÃ¡ginas protegidas
-    const protectedPages = ['dashboard.html', 'cadastro_motorista.html', 'cadastro_viatura.html'];
+    // Verificar autenticação em páginas protegidas
+    const protectedPages = ['dashboard.html', 'cadastro_motorista.html', 'cadastro_viatura.html', 'usuarios.html'];
     const currentPage = window.location.pathname.split('/').pop();
     
-    if (protectedPages.includes(currentPage) && !auth.isAuthenticated()) {
-        window.location.href = 'login.html';
-        return;
+    if (protectedPages.includes(currentPage)) {
+        if (!auth.isAuthenticated()) {
+            window.location.href = 'login.html';
+            return;
+        }
     }
 
     // Configurar logout
@@ -233,35 +275,31 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             if (confirm('Deseja realmente sair do sistema?')) {
-                // Adicionar efeito visual de saÃ­da
-                document.body.style.opacity = '0.7';
-                setTimeout(() => {
-                    auth.logout();
-                }, 300);
+                auth.logout();
             }
         });
     }
 
-    // Configurar menu mobile
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const navMenu = document.getElementById('navMenu');
-    
-    if (mobileMenuBtn && navMenu) {
-        mobileMenuBtn.addEventListener('click', function() {
-            navMenu.classList.toggle('active');
-            this.innerHTML = navMenu.classList.contains('active') ? 
-                'âœ•' : 'â˜°';
-        });
-
-        // Fechar menu ao clicar fora
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.main-nav') && !e.target.closest('.mobile-menu-btn')) {
-                navMenu.classList.remove('active');
-                mobileMenuBtn.innerHTML = 'â˜°';
-            }
-        });
+    // Mostrar informações do usuário logado
+    const userInfoElement = document.getElementById('userInfo');
+    if (userInfoElement) {
+        const user = auth.getCurrentUser();
+        if (user) {
+            userInfoElement.textContent = `${user.nomeGuerra} (${user.graduacao})`;
+        }
     }
 });
 
-// UtilitÃ¡rios de autenticaÃ§Ã£o
+// Função auxiliar para mostrar erros
+function showError(message) {
+    const errorElement = document.getElementById('loginError');
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+}
+
+// Tornar auth globalmente disponível
 window.auth = auth;
+
+console.log('AuthSystem carregado com sucesso!');
